@@ -31,10 +31,9 @@ class Client {
 		std::string						_username;
 		bool							_isOperator;
 		bool							_isAuth;
-		unsigned int 					_id;
 	public:
 		Client();
-		Client(int socket, int id);
+		Client(int socket);
 		Client(const Client &copy);
 		Client &operator=(const Client &copy);
 		~Client();

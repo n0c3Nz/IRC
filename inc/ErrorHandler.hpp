@@ -32,6 +32,10 @@ class ErrorHandler : public std::exception {
 			return ErrorHandler("Error: Unable to listen on socket.");
 		}
 
+		static ErrorHandler SocketAccept() {
+			return ErrorHandler("Error: Unable to accept connection.");
+		}
+
 };
 
 

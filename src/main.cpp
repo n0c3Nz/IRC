@@ -27,6 +27,7 @@ int main(int argc, char **argv)
 	checkPort(argv[1]);
 	Server server(std::stoi(argv[1]));
 	server.start();
+	server.run();
 
 	return 0;
 }

@@ -5,15 +5,13 @@ Client::Client(){
 	this->_nickname = "";
 	this->_username = "";
 	this->_isOperator = false;
-	this->_id = -1;
 }
 
-Client::Client(int socket, int id){
+Client::Client(int socket){
 	this->_socket = socket;
-	this->_nickname = "";
+	this->_nickname = "Guest" + std::to_string(socket);
 	this->_username = "";
 	this->_isOperator = false;
-	this->_id = id;
 }
 
 Client::Client(const Client &copy){
@@ -26,7 +24,6 @@ Client &Client::operator=(const Client &copy){
 		this->_nickname = copy._nickname;
 		this->_username = copy._username;
 		this->_isOperator = copy._isOperator;
-		this->_id = copy._id;
 	}
 	return *this;
 }

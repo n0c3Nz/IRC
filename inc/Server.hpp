@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <list>
+#include <vector>
 #include <algorithm>
 #include <iterator>
 #include <sstream>
@@ -22,12 +24,14 @@
 #include <signal.h>
 #include <errno.h>
 #include <cstring>
+#include <poll.h>
+
 #include <ErrorHandler.hpp>
 #include <Client.hpp>
 #include <Channel.hpp>
 #include <Authentication.hpp>
 
-#define MAX_CLIENTS 42
+#define MAX_CLIENTS 10
 #define MAX_MSG_SIZE 4096
 
 #define SRV_NAME "Anon Chat Server"
@@ -59,6 +63,7 @@ class Server {
 		void setChannels(std::map<std::string, Channel> channels);
 		// Methods
 		void start(void);
+		void run(void);
 };
 
 #endif
