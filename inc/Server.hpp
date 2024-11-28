@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <cstring>
 #include <poll.h>
+#include <epoll.h>
 
 #include <ErrorHandler.hpp>
 #include <Client.hpp>

@@ -123,6 +123,11 @@ void Server::run(void) {
     while (true)
     {
         int ret = poll(fds, MAX_CLIENTS + 1, 0); // Cambiamos 1 por MAX_CLIENTS + 1 para revisar todos los sockets
+        //int epfd = epoll_create(1);//NUEVO
+        //struct epoll_event ev, events[1];//NUEVO
+        //ev.events = EPOLLIN;//NUEVO
+        //ev.data.fd = _socket;//NUEVO
+        //epoll_ctl(epfd, EPOLL_CTL_ADD, _socket, &ev);//NUEVO 
         try {
             if (ret > 0)
             {
@@ -161,6 +166,10 @@ void Server::run(void) {
                         int valread = read(fds[i].fd, buffer, sizeof(buffer) - 1);
                         if (valread > 0) {
                             buffer[valread] = '\0'; // Asegurar que el mensaje sea una cadena terminada en nulo
+                            if (std::string(buffer) == "/USERNAME\n") {
+                                std::cout << "[ COMANDO DETECTADO ]" << std::endl;
+                                send(fds[i].fd, "Escribe tu nombre\n", std::strlen("Escribe tu nombre\n"), 0);
+                            }
                             std::cout << "Mensaje recibido del cliente " << i << ": " << buffer << std::endl;
                             // Aquí podrías agregar lógica para manejar los comandos o mensajes del cliente
                         }
