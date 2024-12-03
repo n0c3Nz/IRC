@@ -28,6 +28,5 @@ int main(int argc, char **argv)
 	Server server(std::stoi(argv[1]));
 	server.start();
 	server.run();
-
 	return 0;
 }

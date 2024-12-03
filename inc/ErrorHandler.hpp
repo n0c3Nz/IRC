@@ -36,6 +36,10 @@ class ErrorHandler : public std::exception {
 			return ErrorHandler("Error: Unable to accept connection.");
 		}
 
+		static ErrorHandler SocketEpoll() {
+			return ErrorHandler("Error: Unable to create Epoll socket.");
+		}
+
 };
 
 

@@ -25,14 +25,14 @@
 #include <errno.h>
 #include <cstring>
 #include <poll.h>
-#include <epoll.h>
+#include <sys/epoll.h>
 
 #include <ErrorHandler.hpp>
 #include <Client.hpp>
 #include <Channel.hpp>
 #include <Authentication.hpp>
 
-#define MAX_CLIENTS 10
+#define MAX_EVENTS 10
 #define MAX_MSG_SIZE 4096
 
 #define SRV_NAME "Anon Chat Server"
@@ -45,6 +45,7 @@ class Server {
 		std::map<int, Client>			_clients;
 		std::map<std::string, Channel>	_channels;
 		std::string						_password;
+		std::string						_motd;
 	public:
 		Server();
 		Server(int port);
@@ -63,8 +64,11 @@ class Server {
 		void setClients(std::map<int, Client> clients);
 		void setChannels(std::map<std::string, Channel> channels);
 		// Methods
+		void AnnounceConnection(int clientFd) const;
 		void start(void);
 		void run(void);
 };
+
+void setNonBlocking(int socketFd);
 
 #endif

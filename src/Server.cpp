@@ -2,7 +2,7 @@
 
 
 Server::Server(){
-	this->_port = 4242;
+	this->_port = 6660;
 	this->_socket = -1;
 	_servAddr.sin_family = AF_INET;//IPv4
 	_servAddr.sin_addr.s_addr = INADDR_ANY;// Para escuchar en todas las interfaces
@@ -90,6 +90,13 @@ void Server::setChannels(std::map<std::string, Channel> channels){
 
 // Methods
 
+void Server::AnnounceConnection(int clientFd) const{
+    struct sockaddr_in clientAddr;
+    socklen_t clientAddrLen = sizeof(clientAddr);
+    getpeername(clientFd, (struct sockaddr *)&clientAddr, &clientAddrLen);
+    std::cout << "Connection from " << inet_ntoa(clientAddr.sin_addr) << ":" << ntohs(clientAddr.sin_port) << std::endl;
+}
+
 void Server::start(void) {
     std::cout << "Server started" << std::endl;
     this->_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -102,7 +109,7 @@ void Server::start(void) {
 			throw ErrorHandler::SocketBind();
 		}
 
-		if (listen(this->_socket, MAX_CLIENTS) == -1) {
+		if (listen(this->_socket, MAX_EVENTS) == -1) {
 			throw ErrorHandler::SocketListen();
 		}
 
@@ -114,82 +121,86 @@ void Server::start(void) {
 	}
 }
 
+void setNonBlocking(int socketFd) {
+    int flags = fcntl(socketFd, F_GETFL, 0);// Obtiene los flags actuales del socket
+    fcntl(socketFd, F_SETFL, flags | O_NONBLOCK);// Agrega el flag O_NONBLOCK, F_SETFL establece los flags del socket
+}
+
 void Server::run(void) {
-    // Usar nuestro socket para aceptar conexiones en una poll
-    struct pollfd fds[MAX_CLIENTS + 1];
-    fds[0].fd = _socket;
-    fds[0].events = POLLIN;
+    int clientFd;
+    int epollFd = epoll_create(MAX_EVENTS);// Crea el file descriptor para el epoll
+    struct epoll_event event, events[MAX_EVENTS];// Estructuras para manejar eventos
+    // Agregar el descriptor del servidor al epoll
+    event.events = EPOLLIN;      // Interesado en eventos de lectura
+    event.data.fd = _socket;   // Asociar con el descriptor del servidor
+        if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _socket, &event) == -1) {
+        std::cerr << "Error al agregar descriptor al epoll" << std::endl;
+        close(_socket);
+        close(epollFd);
+        return;
+    }
 
     while (true)
     {
-        int ret = poll(fds, MAX_CLIENTS + 1, 0); // Cambiamos 1 por MAX_CLIENTS + 1 para revisar todos los sockets
-        //int epfd = epoll_create(1);//NUEVO
-        //struct epoll_event ev, events[1];//NUEVO
-        //ev.events = EPOLLIN;//NUEVO
-        //ev.data.fd = _socket;//NUEVO
-        //epoll_ctl(epfd, EPOLL_CTL_ADD, _socket, &ev);//NUEVO 
-        try {
-            if (ret > 0)
-            {
-                // Verificar si hay una nueva conexión en el socket maestro
-                if (fds[0].revents & POLLIN)
-                {
-                    // Crear nuevo socket y añadirlo a _clients
-                    int new_socket = accept(_socket, NULL, NULL);
-                    if (new_socket == -1)
-                        throw ErrorHandler::SocketAccept();
-                    std::cout << "Nueva conexión aceptada." << std::endl;
-                    send(new_socket, "Bienvenido al servidor de chat\n", std::strlen("Bienvenido al servidor de chat\n"), 0);
-                    send(new_socket, "Por favor, selecciona un username con /USERNAME para continuar\n", std::strlen("Por favor, selecciona un username con /USERNAME para continuar\n"), 0);
-                    // Añadir nuevo socket a poll y a _clients pero en orden
-                    int i = 1;
-                    while (i < MAX_CLIENTS + 1 && _clients.find(i) != _clients.end()) {
-                        i++;
-                    }
-                    if (i == MAX_CLIENTS + 1)
-                    {
-                        close(new_socket);
-                        std::cerr << "Demasiados clientes conectados" << std::endl;
-                        exit(1);
-                    }
-                    fds[i].fd = new_socket;
-                    fds[i].events = POLLIN;
-                    _clients[i] = Client(new_socket);
-                    std::cout << "Nuevo cliente añadido: " << _clients[i].getNickname() << std::endl;
+        int num_events = epoll_wait(epollFd, events, MAX_EVENTS, -1);// Creamos un array de eventos y esperamos a que ocurran
+        try{
+            if (num_events == -1) {// Si hay un error en epoll_wait lanzamos una excepción
+                throw ErrorHandler::SocketEpoll();
+            }
+        }
+        catch (std::exception &e){
+            std::cerr << e.what() << std::endl;
+            return;
+        }
+        for (int i = 0; i < num_events; i++) {
+            if (events[i].data.fd == _socket) {// Si el evento es del servidor significa que hay un nuevo cliente
+                // Nuevo cliente
+                socklen_t addrlen = sizeof(_servAddr);// Tamaño de la dirección del servidor
+                int clientFd = accept(_socket, (struct sockaddr *)&_servAddr, &addrlen);//socket del nuevo cliente
+                if (clientFd == -1) {
+                    std::cerr << "Error aceptando conexión" << std::endl;
+                    continue;
                 }
-
-                // Recibir mensajes de los clientes
-                for (int i = 1; i < MAX_CLIENTS + 1; i++) {
-                    if (fds[i].fd != -1 && (fds[i].revents & POLLIN)) {
-                        // Leer datos del cliente
-                        char buffer[MAX_MSG_SIZE] = {0};
-                        int valread = read(fds[i].fd, buffer, sizeof(buffer) - 1);
-                        if (valread > 0) {
-                            buffer[valread] = '\0'; // Asegurar que el mensaje sea una cadena terminada en nulo
-                            if (std::string(buffer) == "/USERNAME\n") {
-                                std::cout << "[ COMANDO DETECTADO ]" << std::endl;
-                                send(fds[i].fd, "Escribe tu nombre\n", std::strlen("Escribe tu nombre\n"), 0);
-                            }
-                            std::cout << "Mensaje recibido del cliente " << i << ": " << buffer << std::endl;
-                            // Aquí podrías agregar lógica para manejar los comandos o mensajes del cliente
-                        }
-                        else {
-                            // Si la lectura falla o el cliente cerró la conexión
-                            std::cout << "Cliente " << i << " desconectado." << std::endl;
-                            close(fds[i].fd);
-                            fds[i].fd = -1;
-                            _clients.erase(i); // Eliminar el cliente de la lista
-                        }
+                setNonBlocking(clientFd);// Hacemos el socket del cliente no bloqueante
+                event.events = EPOLLIN | EPOLLET; // Edge-Triggered
+                event.data.fd = clientFd;
+                if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1) {// Agregamos el socket del cliente al epoll
+                    std::cerr << "Error al agregar cliente al epoll" << std::endl;
+                    close(clientFd);
+                    continue;
+                }
+                _clients[clientFd] = Client(clientFd);// Agregamos el cliente al mapa de clientes
+                AnnounceConnection(clientFd);// Anunciamos la conexión del cliente
+            } else {
+                // Cliente existente
+                int clientFd = events[i].data.fd;// Obtenemos el socket del cliente existente que generó el evento
+                char buffer[MAX_MSG_SIZE];
+                bzero(buffer, MAX_MSG_SIZE);
+                int bytesRead = recv(clientFd, buffer, MAX_MSG_SIZE, 0);
+                if (bytesRead <= 0) {// Si no se reciben bytes significa que el cliente se desconectó
+                    // Cliente desconectado
+                    epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, NULL);// Eliminamos el socket del cliente del epoll
+                    close(clientFd);// Cerramos el socket del cliente
+                    _clients.erase(clientFd);// Eliminamos al cliente del mapa de clientes
+                    std::cout << "Cliente desconectado" << std::endl;
+                } else {
+                    buffer[bytesRead] = '\0';
+                    std::cout << "Mensaje recibido: " << buffer << std::endl;
+                    if (strcmp(buffer, "exit\n") == 0) {
+                        send(clientFd, "Disconnecting ...", strlen("Disconnecting ..."), 0);
+                        epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, NULL);
+                        close(clientFd);
+                        _clients.erase(clientFd);
+                        std::cout << "Cliente desconectado" << std::endl;
+                    } else {
+                        // Responder al cliente
+                        send(clientFd, buffer, strlen(buffer), 0);
                     }
                 }
             }
         }
-        catch (std::exception &e) {
-            std::cerr << e.what() << std::endl;
-            exit(1);
-        }
+
     }
-    close(_socket);
+    close(epollFd);
+    return;
 }
-
-

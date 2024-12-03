@@ -1,0 +1,24 @@
+diff --git a/debian-devel/rules b/debian-devel/rules
+index cab713c93..d2756333b 100755
+--- a/debian-devel/rules
++++ b/debian-devel/rules
+@@ -8,6 +8,7 @@ override_dh_auto_configure:
+ 	dh_auto_configure --buildsystem=cmake -- \
+ 		-DCMAKE_INSTALL_PREFIX:FILEPATH=/usr \
+ 		-DLIBDIR=/usr/lib/${DEB_HOST_MULTIARCH} \
++		-DENABLE_CJSON:BOOL=OFF \
+ 		-DENABLE_DOC:BOOL=ON \
+ 		-DENABLE_MAN:BOOL=ON \
+ 		-DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo \
+diff --git a/debian-stable/rules b/debian-stable/rules
+index cab713c93..d2756333b 100755
+--- a/debian-stable/rules
++++ b/debian-stable/rules
+@@ -8,6 +8,7 @@ override_dh_auto_configure:
+ 	dh_auto_configure --buildsystem=cmake -- \
+ 		-DCMAKE_INSTALL_PREFIX:FILEPATH=/usr \
+ 		-DLIBDIR=/usr/lib/${DEB_HOST_MULTIARCH} \
++		-DENABLE_CJSON:BOOL=OFF \
+ 		-DENABLE_DOC:BOOL=ON \
+ 		-DENABLE_MAN:BOOL=ON \
+ 		-DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo \
