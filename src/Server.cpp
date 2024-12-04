@@ -7,14 +7,18 @@ Server::Server(){
 	_servAddr.sin_family = AF_INET;//IPv4
 	_servAddr.sin_addr.s_addr = INADDR_ANY;// Para escuchar en todas las interfaces
 	_servAddr.sin_port = htons(this->_port);
+    _password = "1234";
+    _motd = "Welcome to the Anon Chat Server";
 }
 
-Server::Server(int port){
+Server::Server(int port, std::string password, std::string motd){
 	this->_port = port;
 	this->_socket = -1;
 	_servAddr.sin_family = AF_INET;//IPv4
 	_servAddr.sin_addr.s_addr = INADDR_ANY;// Para escuchar en todas las interfaces
 	_servAddr.sin_port = htons(this->_port);
+    _password = password;
+    _motd = motd;
 }
 
 Server::Server(const Server &copy){
@@ -199,7 +203,6 @@ void Server::run(void) {
                 }
             }
         }
-
     }
     close(epollFd);
     return;

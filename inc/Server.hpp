@@ -48,7 +48,7 @@ class Server {
 		std::string						_motd;
 	public:
 		Server();
-		Server(int port);
+		Server(int port, std::string password, std::string motd);
 		Server(const Server &copy);
 		Server &operator=(const Server &copy);
 		~Server();
