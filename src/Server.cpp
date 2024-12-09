@@ -102,7 +102,7 @@ void Server::setNickname(int clientFd, const std::string &nickname) {
     // Si el cliente existe, simplemente le asignamos el nuevo nickname.
         _clients[clientFd]->setNickname(nickname);
         std::cerr << "[DEBUG] Nombre establecido para nuevo cliente: " << nickname << std::endl;
-        send(clientFd, "NICK :Nickname establecido\r\n", 29, 0);
+        //send(clientFd, "NICK :Nickname establecido\r\n", 29, 0);
         return;
 }
 
@@ -168,7 +168,6 @@ void Server::quit(int clientFd){
 
 void Server::nick(int clientFd, std::string nickname){
     setNickname(clientFd, nickname);
-
 }
 
 void Server::user(int clientFd, std::string username, std::string realname){
@@ -176,24 +175,68 @@ void Server::user(int clientFd, std::string username, std::string realname){
     _clients[clientFd]->setRealname(realname);
 }
 
+int checkEmptyAndAlnum(std::string str){
+    if (str.empty()){
+        return 0;
+    }
+    for (int i = 0; i < str.length(); i++){
+        if (!isalnum(str[i]) || str[i] == ' '){
+            return 0;
+        }
+    }
+    return 1;
+}
+
 void Server::processCommand(int clientFd, std::string command) {
     std::string response;
     if (command == "QUIT") {
         quit(clientFd);
         return;
-    } else if (std::strncmp(command.c_str(), "NICK ", 5) == 0){
+    }else if (std::strncmp(command.c_str(), "PASS ", 5) == 0){
+        std::cout << "[LOG] COMMAND: PASS DETECTADO" << std::endl;
+        std::string password = command.substr(5);
+        if (password.empty()){
+            response = "ERROR :Password vacío\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
+        if (password == _password){
+            _clients[clientFd]->setPwdSent();
+        }
+        else{
+            response = "ERROR :Password incorrecto\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
+        //return;
+    }else if (std::strncmp(command.c_str(), "NICK ", 5) == 0 && _clients[clientFd]->getPwdSent()){
         std::cout << "[LOG] COMMAND: NICK DETECTADO" << std::endl;
         std::string nickname = command.substr(5);
+        if (!checkEmptyAndAlnum(nickname)){
+            response = "ERROR :Invalid nickname\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
         nick(clientFd, nickname);
         //return;
-    } else if (std::strncmp(command.c_str(), "USER ", 5) == 0){
+    } else if (std::strncmp(command.c_str(), "USER ", 5) == 0 && _clients[clientFd]->getPwdSent()){
         std::cout << "[LOG] COMMAND: USER DETECTADO" << std::endl;
         // Guardar la posicion del espacio desde command[5], es decir, el segundo espacio
         int pos = command.find(' ', 5);
         std::string username = command.substr(5, pos - 5);
         pos = command.find(':');
         std::string realname = command.substr(pos + 1);
+        if (!checkEmptyAndAlnum(username) || !checkEmptyAndAlnum(realname)){
+            response = "ERROR :Invalid username or realname\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
         user(clientFd, username, realname);
+        _clients[clientFd]->setIsAuth();//falta añadirlo a la lista de authenticatedClients
+        std::string hash = _clients[clientFd]->getNickname() + ":" + _clients[clientFd]->getUsername() + ":" + _clients[clientFd]->getRealname();
+        handshake(clientFd);
+        _authenticatedClients.push_back(hash);
+        std::cerr << "[DEBUG] Hash añadido: " << hash << std::endl;//falta añadirlo a la lista de authenticatedClients
         //return;
     } else {
         response = "ERROR :Unknown command ma G\r\n";

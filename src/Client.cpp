@@ -6,6 +6,8 @@ Client::Client(){
 	this->_username = "";
 	this->_isOperator = false;
 	this->_buffer = "";
+	this->_isAuth = false;
+	this->_pwdSent = false;
 }
 
 Client::Client(int socket){
@@ -13,6 +15,9 @@ Client::Client(int socket){
 	this->_nickname = "Guest" + std::to_string(socket);
 	this->_username = "";
 	this->_isOperator = false;
+	this->_buffer = "";
+	this->_isAuth = false;
+	this->_pwdSent = false;
 }
 
 Client::Client(const Client &copy){
@@ -54,6 +59,14 @@ bool Client::getIsOperator(void) const{
 	return this->_isOperator;
 }
 
+bool Client::getIsAuth(void) const{
+	return this->_isAuth;
+}
+
+bool Client::getPwdSent(void) const{
+	return this->_pwdSent;
+}
+
 // Setters
 
 void Client::setSocket(int socket){
@@ -74,4 +87,16 @@ void Client::setIsOperator(bool isOperator){
 
 void Client::setRealname(std::string realname){
 	this->_realname = realname;
+}
+
+void Client::setIsAuth(void){
+	if (_username.empty() || _realname.empty()){
+		this->_isAuth = false;
+		return;
+	}
+	this->_isAuth = true;
+}
+
+void Client::setPwdSent(void){
+	this->_pwdSent = true;
 }

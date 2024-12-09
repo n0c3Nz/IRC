@@ -31,7 +31,6 @@
 #include <ErrorHandler.hpp>
 #include <Client.hpp>
 #include <Channel.hpp>
-#include <Authentication.hpp>
 
 #define MAX_EVENTS 10
 #define MAX_MSG_SIZE 4096
@@ -50,6 +49,7 @@ class Server {
 		int 							_socket;
 		int 							_epollFd;
 		std::map<int, std::shared_ptr<Client>> _clients;
+		std::vector <std::string>		_authenticatedClients;
 		std::map<std::string, Channel>	_channels;
 		std::string						_password;
 		std::string						_motd;
@@ -86,5 +86,6 @@ class Server {
 };
 
 void setNonBlocking(int socketFd);
+int checkEmptyAndAlnum(std::string str);
 
 #endif
