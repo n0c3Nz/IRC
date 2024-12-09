@@ -5,6 +5,7 @@ Client::Client(){
 	this->_nickname = "";
 	this->_username = "";
 	this->_isOperator = false;
+	this->_buffer = "";
 }
 
 Client::Client(int socket){
@@ -45,6 +46,10 @@ std::string Client::getUsername(void) const{
 	return this->_username;
 }
 
+std::string Client::getRealname(void) const{
+	return this->_realname;
+}
+
 bool Client::getIsOperator(void) const{
 	return this->_isOperator;
 }
@@ -65,4 +70,8 @@ void Client::setUsername(std::string username){
 
 void Client::setIsOperator(bool isOperator){
 	this->_isOperator = isOperator;
+}
+
+void Client::setRealname(std::string realname){
+	this->_realname = realname;
 }

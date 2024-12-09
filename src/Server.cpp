@@ -35,22 +35,13 @@ Server &Server::operator=(const Server &copy){
 	return *this;
 }
 
-Server::~Server(){
-	close(this->_socket);
-
-	std::map<int, Client>::iterator it = this->_clients.begin();
-	while (it != this->_clients.end()){
-		close(it->first);
-		it++;
-	}
-
-	std::map<std::string, Channel>::iterator it2 = this->_channels.begin();
-	while (it2 != this->_channels.end()){
-		it2++;
-	}
-
-	std::cout << "Server closed" << std::endl;
+Server::~Server() {
+    close(this->_socket);
+    _clients.clear(); // `clear` llama automáticamente al destructor de `std::shared_ptr`.
+    _channels.clear(); // Si también se usa un contenedor que maneja memoria, se liberará correctamente.
+    std::cout << "Server closed" << std::endl;
 }
+
 
 // Getters
 
@@ -62,9 +53,10 @@ int Server::getSocket(void) const{
 	return this->_socket;
 }
 
-std::map<int, Client> Server::getClients(void) const{
-	return this->_clients;
+const std::map<int, std::shared_ptr<Client>>& Server::getClients() const {
+    return this->_clients;
 }
+
 
 std::map<std::string, Channel> Server::getChannels(void) const{
 	return this->_channels;
@@ -84,12 +76,34 @@ void Server::setSocket(int socket){
 	this->_socket = socket;
 }
 
-void Server::setClients(std::map<int, Client> clients){
-	this->_clients = clients;
+void Server::setClients(std::map<int, std::shared_ptr<Client>> clients) {
+    this->_clients = std::move(clients);
 }
+
 
 void Server::setChannels(std::map<std::string, Channel> channels){
 	this->_channels = channels;
+}
+
+void Server::setNickname(int clientFd, const std::string &nickname) {
+    // Primero recorremos todos los clientes para comprobar si el nickname ya está en uso
+    for (std::map<int, std::shared_ptr<Client>>::iterator iter = _clients.begin(); iter != _clients.end(); ++iter) {
+        // Si encontramos el nickname en uso en un cliente distinto del actual (clientFd)
+        if (iter->second->getNickname() == nickname && iter->first != clientFd) {
+            std::cerr << "[DEBUG] El nick '" << nickname << "' ya está siendo usado por el cliente con fd: " 
+                      << iter->first << std::endl;
+            std::string response = "ERROR :Nickname en uso\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
+    }
+
+    // Si llegamos hasta aquí, el nickname no está en uso.
+    // Si el cliente existe, simplemente le asignamos el nuevo nickname.
+        _clients[clientFd]->setNickname(nickname);
+        std::cerr << "[DEBUG] Nombre establecido para nuevo cliente: " << nickname << std::endl;
+        send(clientFd, "NICK :Nickname establecido\r\n", 29, 0);
+        return;
 }
 
 // Methods
@@ -130,23 +144,158 @@ void setNonBlocking(int socketFd) {
     fcntl(socketFd, F_SETFL, flags | O_NONBLOCK);// Agrega el flag O_NONBLOCK, F_SETFL establece los flags del socket
 }
 
+void Server::handshake(int clientFd){
+    std::string response;
+    response = ":" SRV_NAME " RPL_WELCOME  " "c3nz :Welcome to the IRC Network c3nz\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " RPL_YOURHOST " "c3nz :Your host is c3nz, running version " SRV_VERSION "\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " RPL_CREATED " "c3nz :This server" SRV_NAME " was created " __DATE__ " " __TIME__ "\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " RPL_MYINFO " "c3nz :This server" SRV_NAME " " SRV_VERSION " Gikl OV" "\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+}
+
+void Server::quit(int clientFd){
+    std::string response;
+    response = "QUIT :Client disconnected por la gloria de mi padre\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
+    close(clientFd);
+    _clients.erase(clientFd);
+    std::cout << "Cliente desconectado" << std::endl;
+}
+
+void Server::nick(int clientFd, std::string nickname){
+    setNickname(clientFd, nickname);
+
+}
+
+void Server::user(int clientFd, std::string username, std::string realname){
+    _clients[clientFd]->setUsername(username);
+    _clients[clientFd]->setRealname(realname);
+}
+
+void Server::processCommand(int clientFd, std::string command) {
+    std::string response;
+    if (command == "QUIT") {
+        quit(clientFd);
+        return;
+    } else if (std::strncmp(command.c_str(), "NICK ", 5) == 0){
+        std::cout << "[LOG] COMMAND: NICK DETECTADO" << std::endl;
+        std::string nickname = command.substr(5);
+        nick(clientFd, nickname);
+        //return;
+    } else if (std::strncmp(command.c_str(), "USER ", 5) == 0){
+        std::cout << "[LOG] COMMAND: USER DETECTADO" << std::endl;
+        // Guardar la posicion del espacio desde command[5], es decir, el segundo espacio
+        int pos = command.find(' ', 5);
+        std::string username = command.substr(5, pos - 5);
+        pos = command.find(':');
+        std::string realname = command.substr(pos + 1);
+        user(clientFd, username, realname);
+        //return;
+    } else {
+        response = "ERROR :Unknown command ma G\r\n";
+    }
+    //for tests print client nickname, username and realname
+    std::cout << "Nickname: " << _clients[clientFd]->getNickname() << std::endl;
+    std::cout << "Username: " << _clients[clientFd]->getUsername() << std::endl;
+    std::cout << "Realname: " << _clients[clientFd]->getRealname() << std::endl;
+}
+
+void Server::handleClientData(int clientFd) {
+    char buffer[MAX_MSG_SIZE];
+    bzero(buffer, MAX_MSG_SIZE);
+
+    // Leer datos del cliente
+    int bytesRead = recv(clientFd, buffer, MAX_MSG_SIZE - 1, 0);
+
+    if (bytesRead == 0) {
+        // Cliente cerró la conexión
+        std::cerr << "[DEBUG] Cliente cerró la conexión: " << clientFd << std::endl;
+        epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
+        close(clientFd);
+        _clients.erase(clientFd);
+        return;
+    }
+
+    if (bytesRead < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // No hay datos por ahora
+            std::cerr << "[DEBUG] recv devolvió EAGAIN/EWOULDBLOCK para cliente: " << clientFd << std::endl;
+            return;
+        } else {
+            // Error crítico, desconectar al cliente
+            std::cerr << "[DEBUG] Error crítico en recv (cliente " << clientFd << "): " << strerror(errno) << std::endl;
+            epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
+            close(clientFd);
+            _clients.erase(clientFd);
+            return;
+        }
+    }
+
+    // Validar existencia del cliente antes de procesar
+    std::map<int, std::shared_ptr<Client>>::iterator it = _clients.find(clientFd);
+    if (it == _clients.end()) {
+        std::cerr << "[DEBUG] Cliente no encontrado en el mapa (fd: " << clientFd << ")." << std::endl;
+        return;
+    }
+
+    // Acceder al buffer del cliente desde std::shared_ptr
+    try {
+        std::shared_ptr<Client> client = it->second;
+        std::cerr << "[DEBUG] Acumulando datos para cliente " << clientFd << ": tamaño del buffer previo: " << client->_buffer.size() << std::endl;
+
+        client->_buffer.append(buffer, bytesRead);
+        std::cerr << "[DEBUG] Datos acumulados en el buffer del cliente " << clientFd << ": " << client->_buffer << std::endl;
+    } catch (const std::exception &e) {
+        std::cerr << "[DEBUG] Error al acumular datos en el buffer: " << e.what() << std::endl;
+        return;
+    }
+
+    // Procesar comandos completos
+    size_t pos;
+    while ((pos = it->second->_buffer.find('\n')) != std::string::npos) {
+        try {
+            // Extraer comando completo
+            std::string command = it->second->_buffer.substr(0, pos);
+            it->second->_buffer.erase(0, pos + 1);
+
+            // Ignorar comandos vacíos
+            if (!command.empty()) {
+                std::cerr << "[DEBUG] Procesando comando del cliente " << clientFd << ": " << command << std::endl;
+                processCommand(clientFd, command);
+            }
+        } catch (const std::exception &e) {
+            std::cerr << "[DEBUG] Error procesando comando: " << e.what() << std::endl;
+            return;
+        }
+    }
+
+    // Depurar: Mostrar buffer restante después del procesamiento
+    std::cerr << "[DEBUG] Buffer restante para cliente " << clientFd << ": " << it->second->_buffer << std::endl;
+}
+
+
+
 void Server::run(void) {
     int clientFd;
-    int epollFd = epoll_create(MAX_EVENTS);// Crea el file descriptor para el epoll
+    _epollFd = epoll_create(MAX_EVENTS);// Crea el file descriptor para el epoll
     struct epoll_event event, events[MAX_EVENTS];// Estructuras para manejar eventos
     // Agregar el descriptor del servidor al epoll
     event.events = EPOLLIN;      // Interesado en eventos de lectura
     event.data.fd = _socket;   // Asociar con el descriptor del servidor
-        if (epoll_ctl(epollFd, EPOLL_CTL_ADD, _socket, &event) == -1) {
+        if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, _socket, &event) == -1) {
         std::cerr << "Error al agregar descriptor al epoll" << std::endl;
         close(_socket);
-        close(epollFd);
+        close(_epollFd);
         return;
     }
 
     while (true)
     {
-        int num_events = epoll_wait(epollFd, events, MAX_EVENTS, -1);// Creamos un array de eventos y esperamos a que ocurran
+        int num_events = epoll_wait(_epollFd, events, MAX_EVENTS, -1);// Creamos un array de eventos y esperamos a que ocurran
         try{
             if (num_events == -1) {// Si hay un error en epoll_wait lanzamos una excepción
                 throw ErrorHandler::SocketEpoll();
@@ -168,42 +317,20 @@ void Server::run(void) {
                 setNonBlocking(clientFd);// Hacemos el socket del cliente no bloqueante
                 event.events = EPOLLIN | EPOLLET; // Edge-Triggered
                 event.data.fd = clientFd;
-                if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1) {// Agregamos el socket del cliente al epoll
+                if (epoll_ctl(_epollFd, EPOLL_CTL_ADD, clientFd, &event) == -1) {// Agregamos el socket del cliente al epoll
                     std::cerr << "Error al agregar cliente al epoll" << std::endl;
                     close(clientFd);
                     continue;
                 }
-                _clients[clientFd] = Client(clientFd);// Agregamos el cliente al mapa de clientes
+                _clients[clientFd] = std::make_shared<Client>(clientFd);//_clients[clientFd] = Client(clientFd);// Agregamos el cliente al mapa de clientes
                 AnnounceConnection(clientFd);// Anunciamos la conexión del cliente
             } else {
                 // Cliente existente
                 int clientFd = events[i].data.fd;// Obtenemos el socket del cliente existente que generó el evento
-                char buffer[MAX_MSG_SIZE];
-                bzero(buffer, MAX_MSG_SIZE);
-                int bytesRead = recv(clientFd, buffer, MAX_MSG_SIZE, 0);
-                if (bytesRead <= 0) {// Si no se reciben bytes significa que el cliente se desconectó
-                    // Cliente desconectado
-                    epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, NULL);// Eliminamos el socket del cliente del epoll
-                    close(clientFd);// Cerramos el socket del cliente
-                    _clients.erase(clientFd);// Eliminamos al cliente del mapa de clientes
-                    std::cout << "Cliente desconectado" << std::endl;
-                } else {
-                    buffer[bytesRead] = '\0';
-                    std::cout << "Mensaje recibido: " << buffer << std::endl;
-                    if (strcmp(buffer, "exit\n") == 0) {
-                        send(clientFd, "Disconnecting ...", strlen("Disconnecting ..."), 0);
-                        epoll_ctl(epollFd, EPOLL_CTL_DEL, clientFd, NULL);
-                        close(clientFd);
-                        _clients.erase(clientFd);
-                        std::cout << "Cliente desconectado" << std::endl;
-                    } else {
-                        // Responder al cliente
-                        send(clientFd, buffer, strlen(buffer), 0);
-                    }
-                }
+                handleClientData(clientFd);// Procesamos los datos del cliente
             }
         }
     }
-    close(epollFd);
+    close(_epollFd);
     return;
 }

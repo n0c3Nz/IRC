@@ -31,7 +31,9 @@ class Client {
 		std::string						_username;
 		bool							_isOperator;
 		bool							_isAuth;
+		std::string						_realname;
 	public:
+		std::string						_buffer;
 		Client();
 		Client(int socket);
 		Client(const Client &copy);
@@ -41,11 +43,13 @@ class Client {
 		int getSocket(void) const;
 		std::string getNickname(void) const;
 		std::string getUsername(void) const;
+		std::string getRealname(void) const;
 		bool getIsOperator(void) const;
 		// Setters
 		void setSocket(int socket);
 		void setNickname(std::string nickname);
 		void setUsername(std::string username);
+		void setRealname(std::string realname);
 		void setIsOperator(bool isOperator);
 };
 
