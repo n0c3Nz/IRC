@@ -77,6 +77,9 @@ class Server {
 		void run(void);
 		void handleClientData(int clientFd);
 		void processCommand(int clientFd, std::string command);
+		int	checkHash(int clientFd);
+		void checkOnline(int clientFd);
+		void closeConnection(int clientFd);
 		//Handshake
 		void handshake(int clientFd);
 		//Commands

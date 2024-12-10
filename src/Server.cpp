@@ -86,24 +86,9 @@ void Server::setChannels(std::map<std::string, Channel> channels){
 }
 
 void Server::setNickname(int clientFd, const std::string &nickname) {
-    // Primero recorremos todos los clientes para comprobar si el nickname ya está en uso
-    for (std::map<int, std::shared_ptr<Client>>::iterator iter = _clients.begin(); iter != _clients.end(); ++iter) {
-        // Si encontramos el nickname en uso en un cliente distinto del actual (clientFd)
-        if (iter->second->getNickname() == nickname && iter->first != clientFd) {
-            std::cerr << "[DEBUG] El nick '" << nickname << "' ya está siendo usado por el cliente con fd: " 
-                      << iter->first << std::endl;
-            std::string response = "ERROR :Nickname en uso\r\n";
-            send(clientFd, response.c_str(), response.size(), 0);
-            return;
-        }
-    }
-
-    // Si llegamos hasta aquí, el nickname no está en uso.
-    // Si el cliente existe, simplemente le asignamos el nuevo nickname.
-        _clients[clientFd]->setNickname(nickname);
-        std::cerr << "[DEBUG] Nombre establecido para nuevo cliente: " << nickname << std::endl;
-        //send(clientFd, "NICK :Nickname establecido\r\n", 29, 0);
-        return;
+    _clients[clientFd]->setNickname(nickname);
+    std::cerr << "[DEBUG] Nombre establecido para el nuevo cliente: " << nickname << std::endl;
+    return;
 }
 
 // Methods
@@ -187,6 +172,50 @@ int checkEmptyAndAlnum(std::string str){
     return 1;
 }
 
+void Server::closeConnection(int clientFd){
+    epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
+    close(clientFd);
+    _clients.erase(clientFd);
+}
+
+void Server::checkOnline(int clientFd){
+    std::string nickname = _clients[clientFd]->getNickname();
+    // Primero recorremos todos los clientes para comprobar si el nickname ya está en uso
+    for (std::map<int, std::shared_ptr<Client>>::iterator iter = _clients.begin(); iter != _clients.end(); ++iter) {
+        // Si encontramos el nickname en uso en un cliente distinto del actual (clientFd)
+        if (iter->second->getNickname() == nickname && iter->first != clientFd) {
+            std::cerr << "[DEBUG] El usuario '" << nickname << "' ha abierto una nueva conexión con el cliente con fd: " 
+                      << iter->first << std::endl;
+            //cerrar la conexión anterior y dejar la nueva
+            closeConnection(iter->first);
+            return;
+        }
+    }
+}
+
+int Server::checkHash(int clientFd){
+    //Comprobar si existe algún hash cuyo nickname sea igual al del cliente
+    for (int i = 0; i < _authenticatedClients.size(); i++){
+        std::string hash = _authenticatedClients[i];
+        std::string nickname = hash.substr(0, hash.find(':'));
+        if (nickname == _clients[clientFd]->getNickname()){
+            if (_clients[clientFd]->getHash() == hash){
+                //Comprobar si hay otro cliente conectado y autenticado con el mismo nickname, si lo hay desconectarlo
+                checkOnline(clientFd);
+                return 0;
+            }
+            //Manejar el caso de que el nick pertenezca a otro cliente
+            else{
+                std::string response = "ERROR :This nickname is already taken\r\n";
+                send(clientFd, response.c_str(), response.size(), 0);
+                return 1;
+            }
+        }
+    }
+    _authenticatedClients.push_back(_clients[clientFd]->getHash());// Lo insertamos en la lista de clientes autenticados
+    return 0;
+}
+
 void Server::processCommand(int clientFd, std::string command) {
     std::string response;
     if (command == "QUIT") {
@@ -232,11 +261,11 @@ void Server::processCommand(int clientFd, std::string command) {
             return;
         }
         user(clientFd, username, realname);
-        _clients[clientFd]->setIsAuth();//falta añadirlo a la lista de authenticatedClients
-        std::string hash = _clients[clientFd]->getNickname() + ":" + _clients[clientFd]->getUsername() + ":" + _clients[clientFd]->getRealname();
+        if (checkHash(clientFd))
+            return;
+        std::cerr << "[DEBUG] Hash añadido: " << _clients[clientFd]->getHash() << std::endl;//falta añadirlo a la lista de authenticatedClients
+        _clients[clientFd]->setIsAuth();//Lo autenticamos
         handshake(clientFd);
-        _authenticatedClients.push_back(hash);
-        std::cerr << "[DEBUG] Hash añadido: " << hash << std::endl;//falta añadirlo a la lista de authenticatedClients
         //return;
     } else {
         response = "ERROR :Unknown command ma G\r\n";
@@ -257,9 +286,7 @@ void Server::handleClientData(int clientFd) {
     if (bytesRead == 0) {
         // Cliente cerró la conexión
         std::cerr << "[DEBUG] Cliente cerró la conexión: " << clientFd << std::endl;
-        epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
-        close(clientFd);
-        _clients.erase(clientFd);
+        closeConnection(clientFd);
         return;
     }
 
@@ -271,9 +298,7 @@ void Server::handleClientData(int clientFd) {
         } else {
             // Error crítico, desconectar al cliente
             std::cerr << "[DEBUG] Error crítico en recv (cliente " << clientFd << "): " << strerror(errno) << std::endl;
-            epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
-            close(clientFd);
-            _clients.erase(clientFd);
+            closeConnection(clientFd);
             return;
         }
     }

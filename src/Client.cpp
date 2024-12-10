@@ -67,6 +67,9 @@ bool Client::getPwdSent(void) const{
 	return this->_pwdSent;
 }
 
+std::string Client::getHash(void) const{
+	return this->_nickname + ":" + this->_username + ":" + this->_realname;
+}
 // Setters
 
 void Client::setSocket(int socket){
