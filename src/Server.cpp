@@ -131,13 +131,13 @@ void setNonBlocking(int socketFd) {
 
 void Server::handshake(int clientFd){
     std::string response;
-    response = ":" SRV_NAME " RPL_WELCOME  " "c3nz :Welcome to the IRC Network c3nz\r\n";
+    response = ":" SRV_NAME " " RPL_WELCOME " c3nz :Welcome to the IRC Network c3nz\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
-    response = ":" SRV_NAME " RPL_YOURHOST " "c3nz :Your host is c3nz, running version " SRV_VERSION "\r\n";
+    response = ":" SRV_NAME " " RPL_YOURHOST " c3nz :Your host is c3nz, running version " SRV_VERSION "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
-    response = ":" SRV_NAME " RPL_CREATED " "c3nz :This server" SRV_NAME " was created " __DATE__ " " __TIME__ "\r\n";
+    response = ":" SRV_NAME " " RPL_CREATED " c3nz :This server" SRV_NAME " was created " __DATE__ " " __TIME__ "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
-    response = ":" SRV_NAME " RPL_MYINFO " "c3nz :This server" SRV_NAME " " SRV_VERSION " Gikl OV" "\r\n";
+    response = ":" SRV_NAME " " RPL_MYINFO " c3nz :This server" SRV_NAME " " SRV_VERSION " Gikl OV" "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
 }
 
@@ -145,9 +145,7 @@ void Server::quit(int clientFd){
     std::string response;
     response = "QUIT :Client disconnected por la gloria de mi padre\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
-    epoll_ctl(_epollFd, EPOLL_CTL_DEL, clientFd, NULL);
-    close(clientFd);
-    _clients.erase(clientFd);
+    closeConnection(clientFd);
     std::cout << "Cliente desconectado" << std::endl;
 }
 
@@ -162,14 +160,20 @@ void Server::user(int clientFd, std::string username, std::string realname){
 
 int checkEmptyAndAlnum(std::string str){
     if (str.empty()){
-        return 0;
+        return 1;
     }
     for (int i = 0; i < str.length(); i++){
-        if (!isalnum(str[i]) || str[i] == ' '){
-            return 0;
+        if (!isalnum(str[i]) && str[i] != ' ' && str[i] != '\r' && str[i] != '\n'){
+            return 1;
         }
     }
-    return 1;
+    return 0;
+}
+
+void deleteCarriageReturn(std::string &str){
+    if (str[str.length() - 1] == '\r'){
+        str.pop_back();
+    }
 }
 
 void Server::closeConnection(int clientFd){
@@ -218,13 +222,22 @@ int Server::checkHash(int clientFd){
 
 void Server::processCommand(int clientFd, std::string command) {
     std::string response;
-    if (command == "QUIT") {
+    if (std::strncmp(command.c_str(), "QUIT", 4) == 0){
         quit(clientFd);
+        return;
+    }else if (std::strncmp(command.c_str(), "PING", 4) == 0){
+        std::cout << "[LOG] COMMAND: PING DETECTADO" << std::endl;
+        std::string token = command.substr(5, command.length() - 6);
+        response = "PONG " SRV_NAME " " + token + " \r\n";
+        std::cerr << "[DEBUG] Respondiendo a PING con PONG: " << response << std::endl;
+        send(clientFd, response.c_str(), response.size(), 0);
         return;
     }else if (std::strncmp(command.c_str(), "PASS ", 5) == 0){
         std::cout << "[LOG] COMMAND: PASS DETECTADO" << std::endl;
-        std::string password = command.substr(5);
+        //Obtenemos la password sin el ultimo caracter que es '\n'
+        std::string password = command.substr(5, command.length() - 6);
         if (password.empty()){
+            std::cerr << "ERROR :Password entregada vacía\r\n" << std::endl;
             response = "ERROR :Password vacío\r\n";
             send(clientFd, response.c_str(), response.size(), 0);
             return;
@@ -241,11 +254,12 @@ void Server::processCommand(int clientFd, std::string command) {
     }else if (std::strncmp(command.c_str(), "NICK ", 5) == 0 && _clients[clientFd]->getPwdSent()){
         std::cout << "[LOG] COMMAND: NICK DETECTADO" << std::endl;
         std::string nickname = command.substr(5);
-        if (!checkEmptyAndAlnum(nickname)){
+        if (checkEmptyAndAlnum(nickname)){
             response = "ERROR :Invalid nickname\r\n";
             send(clientFd, response.c_str(), response.size(), 0);
             return;
         }
+        deleteCarriageReturn(nickname);
         nick(clientFd, nickname);
         //return;
     } else if (std::strncmp(command.c_str(), "USER ", 5) == 0 && _clients[clientFd]->getPwdSent()){
@@ -255,16 +269,23 @@ void Server::processCommand(int clientFd, std::string command) {
         std::string username = command.substr(5, pos - 5);
         pos = command.find(':');
         std::string realname = command.substr(pos + 1);
-        if (!checkEmptyAndAlnum(username) || !checkEmptyAndAlnum(realname)){
+        if (checkEmptyAndAlnum(username) || checkEmptyAndAlnum(realname)){
             response = "ERROR :Invalid username or realname\r\n";
             send(clientFd, response.c_str(), response.size(), 0);
             return;
         }
+        deleteCarriageReturn(realname);
+        deleteCarriageReturn(username);
         user(clientFd, username, realname);
         if (checkHash(clientFd))
             return;
-        std::cerr << "[DEBUG] Hash añadido: " << _clients[clientFd]->getHash() << std::endl;//falta añadirlo a la lista de authenticatedClients
+        //std::cerr << "[DEBUG] Hash añadido: " << _clients[clientFd]->getHash() << std::endl;
         _clients[clientFd]->setIsAuth();//Lo autenticamos
+        std::cerr << "[DEBUG] Cliente autenticado: " << _clients[clientFd]->getNickname() << " || Hash: " << _clients[clientFd]->getHash() << std::endl;
+        if (_clients[clientFd]->getNickname() == "c3nz"){
+            _clients[clientFd]->setIsOperator(true);
+            std::cerr << "[DEBUG] Cliente " << _clients[clientFd]->getNickname() << " es operador" << std::endl;
+        }
         handshake(clientFd);
         //return;
     } else {

@@ -28,8 +28,9 @@
 class Channel {
 	private:
 		std::string						_name;
-		std::map<int, Client>			_clients;
-		std::vector<int>				_operators;
+		std::string						_topic;
+		std::vector<std::string>		_members;
+		std::vector<std::string>		_operators;
 		std::string						_password;
 		bool							_isPrivate;
 	public:

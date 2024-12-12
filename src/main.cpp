@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	checkPort(argv[1]);
-	Server server(std::stoi(argv[1]), "1234", "Welcome to the Anon Chat Server");
+	Server server(std::stoi(argv[1]), "1234", ":Welcome to the Anon Chat Server");
 	server.start();
 	server.run();
 	return 0;

@@ -35,7 +35,7 @@
 #define MAX_EVENTS 10
 #define MAX_MSG_SIZE 4096
 
-#define SRV_NAME "Anon Chat Server"
+#define SRV_NAME "AnonChatServer"
 #define SRV_VERSION "0.1"
 #define RPL_WELCOME "001"
 #define RPL_YOURHOST "002"
@@ -90,5 +90,6 @@ class Server {
 
 void setNonBlocking(int socketFd);
 int checkEmptyAndAlnum(std::string str);
+void deleteCarriageReturn(std::string &str);
 
 #endif
