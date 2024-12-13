@@ -33,6 +33,7 @@ class Channel {
 		std::vector<std::string>		_operators;
 		std::string						_password;
 		bool							_isPrivate;
+		char							_mode;
 	public:
 		Channel();
 		Channel(std::string name);

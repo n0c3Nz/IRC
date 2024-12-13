@@ -41,6 +41,9 @@
 #define RPL_YOURHOST "002"
 #define RPL_CREATED "003"
 #define RPL_MYINFO "004"
+#define RPL_MOTDSTART "375"
+#define RPL_MOTD "372"
+#define RPL_ENDOFMOTD "376"
 
 class Server {
 	private:
@@ -50,9 +53,8 @@ class Server {
 		int 							_epollFd;
 		std::map<int, std::shared_ptr<Client>> _clients;
 		std::vector <std::string>		_authenticatedClients;
-		std::map<std::string, Channel>	_channels;
+		std::vector <Channel>			_channels;
 		std::string						_password;
-		std::string						_motd;
 	public:
 		Server();
 		Server(int port, std::string password, std::string motd);
@@ -63,13 +65,13 @@ class Server {
 		int getPort(void) const;
 		int getSocket(void) const;
 		const std::map<int, std::shared_ptr<Client>>& getClients() const;
-		std::map<std::string, Channel> getChannels(void) const;
+		const std::vector <Channel>& getChannels() const;
 		std::string getPassword(void) const;
 		// Setters
 		void setPort(int port);
 		void setSocket(int socket);
 		void setClients(std::map<int, std::shared_ptr<Client>> clients);
-		void setChannels(std::map<std::string, Channel> channels);
+		void setChannels(std::vector <Channel> channels);
 		void setNickname(int clientFd, const std::string &nickname);
 		// Methods
 		void AnnounceConnection(int clientFd) const;
@@ -86,6 +88,7 @@ class Server {
 		void quit(int clientFd);
 		void nick(int clientFd, std::string nickname);
 		void user(int clientFd, std::string username, std::string realname);
+		void motd(int clientFd);
 };
 
 void setNonBlocking(int socketFd);

@@ -33,6 +33,8 @@ class Client {
 		bool							_isOperator;
 		bool							_isAuth;
 		bool							_pwdSent;
+		std::vector<std::string>		_joinedChannels;
+		std::string 					_activeChannel;
 	public:
 		std::string						_buffer;
 		Client();

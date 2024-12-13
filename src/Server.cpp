@@ -8,7 +8,6 @@ Server::Server(){
 	_servAddr.sin_addr.s_addr = INADDR_ANY;// Para escuchar en todas las interfaces
 	_servAddr.sin_port = htons(this->_port);
     _password = "1234";
-    _motd = "Welcome to the Anon Chat Server";
 }
 
 Server::Server(int port, std::string password, std::string motd){
@@ -18,7 +17,6 @@ Server::Server(int port, std::string password, std::string motd){
 	_servAddr.sin_addr.s_addr = INADDR_ANY;// Para escuchar en todas las interfaces
 	_servAddr.sin_port = htons(this->_port);
     _password = password;
-    _motd = motd;
 }
 
 Server::Server(const Server &copy){
@@ -30,7 +28,8 @@ Server &Server::operator=(const Server &copy){
 		this->_port = copy._port;
 		this->_socket = copy._socket;
 		this->_clients = copy._clients;
-		this->_channels = copy._channels;
+		//vector of channels
+
 	}
 	return *this;
 }
@@ -58,8 +57,8 @@ const std::map<int, std::shared_ptr<Client>>& Server::getClients() const {
 }
 
 
-std::map<std::string, Channel> Server::getChannels(void) const{
-	return this->_channels;
+const std::vector <Channel>& Server::getChannels() const {
+    return this->_channels;
 }
 
 std::string Server::getPassword(void) const{
@@ -81,8 +80,8 @@ void Server::setClients(std::map<int, std::shared_ptr<Client>> clients) {
 }
 
 
-void Server::setChannels(std::map<std::string, Channel> channels){
-	this->_channels = channels;
+void Server::setChannels(std::vector <Channel> channels) {
+    this->_channels = std::move(channels);
 }
 
 void Server::setNickname(int clientFd, const std::string &nickname) {
@@ -139,6 +138,7 @@ void Server::handshake(int clientFd){
     send(clientFd, response.c_str(), response.size(), 0);
     response = ":" SRV_NAME " " RPL_MYINFO " c3nz :This server" SRV_NAME " " SRV_VERSION " Gikl OV" "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
+    motd(clientFd);
 }
 
 void Server::quit(int clientFd){
@@ -156,6 +156,31 @@ void Server::nick(int clientFd, std::string nickname){
 void Server::user(int clientFd, std::string username, std::string realname){
     _clients[clientFd]->setUsername(username);
     _clients[clientFd]->setRealname(realname);
+}
+
+void Server::motd(int clientFd){
+    std::string response;
+    std::string nickname = _clients[clientFd]->getNickname();
+    std::cerr << "[DEBUG] Enviando MOTD a " << nickname << std::endl;
+
+    response = ":" SRV_NAME " " RPL_MOTDSTART " :- " SRV_NAME " Message of the Day - \r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_MOTD " ---------------------------- \r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_MOTD " " + nickname + " Bienvenido a " SRV_NAME " " + nickname + "\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_MOTD " ---------------------------- \r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_MOTD " Las reglas son sencillas: \r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_MOTD " - Honrarás a los admins sobre todas las cosas. \r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_MOTD " - No dirás palabrotas. \r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_MOTD " - Si lees esto me debes un BTC. \r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_ENDOFMOTD " " + nickname + " :End of /MOTD command.\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
 }
 
 int checkEmptyAndAlnum(std::string str){
@@ -365,8 +390,6 @@ void Server::handleClientData(int clientFd) {
     // Depurar: Mostrar buffer restante después del procesamiento
     std::cerr << "[DEBUG] Buffer restante para cliente " << clientFd << ": " << it->second->_buffer << std::endl;
 }
-
-
 
 void Server::run(void) {
     int clientFd;
