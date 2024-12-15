@@ -70,6 +70,14 @@ bool Client::getPwdSent(void) const{
 std::string Client::getHash(void) const{
 	return this->_nickname + ":" + this->_username + ":" + this->_realname;
 }
+
+std::string Client::getHost(void) {
+	struct sockaddr_in clientAddr;
+    socklen_t clientAddrLen = sizeof(clientAddr);
+    if (getpeername(_socket, (struct sockaddr *)&clientAddr, &clientAddrLen) == -1)
+		throw ErrorHandler::GetPeerName();
+	return inet_ntoa(clientAddr.sin_addr);
+}
 // Setters
 
 void Client::setSocket(int socket){

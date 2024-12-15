@@ -296,6 +296,7 @@ void Server::processCommand(int clientFd, std::string command) {
         }
         if (password == _password){
             _clients[clientFd]->setPwdSent();
+            std::cerr << "[DEBUG] Host: " << _clients[clientFd]->getHost() << std::endl;
         }
         else{
             response = "ERROR :Password incorrecto\r\n";
@@ -374,9 +375,9 @@ void Server::handleClientData(int clientFd) {
     }
 
     if (bytesRead < 0) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        if (errno == 11) {
             // No hay datos por ahora
-            std::cerr << "[DEBUG] recv devolvió EAGAIN/EWOULDBLOCK para cliente: " << clientFd << std::endl;
+            std::cerr << "[DEBUG] recv devolvió EAGAIN/EWOULDBLOCK (= 11) para cliente: " << clientFd << std::endl;
             return;
         } else {
             // Error crítico, desconectar al cliente
