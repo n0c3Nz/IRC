@@ -315,7 +315,7 @@ void Server::processCommand(int clientFd, std::string command) {
         deleteCarriageReturn(nickname);
         nick(clientFd, nickname);
         //return;
-    } else if (std::strncmp(command.c_str(), "USER ", 5) == 0 && _clients[clientFd]->getPwdSent()){
+    }else if (std::strncmp(command.c_str(), "USER ", 5) == 0 && _clients[clientFd]->getPwdSent()){
         std::cout << "[LOG] COMMAND: USER DETECTADO" << std::endl;
         // Guardar la posicion del espacio desde command[5], es decir, el segundo espacio
         int pos = command.find(' ', 5);
@@ -341,8 +341,8 @@ void Server::processCommand(int clientFd, std::string command) {
         }
         handshake(clientFd);
         //return;
-    }
-	else if (std::strncmp(command.c_str(), "PRIVMSG ", 8) == 0 && _clients[clientFd]->getPwdSent()) {
+    }else if (std::strncmp(command.c_str(), "PRIVMSG ", 8) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){
+        std::cout << "[LOG] COMMAND: PRIVMSG DETECTADO" << std::endl;
 		int	end = command.find(':');
 		std::string msg = command.substr(end + 1);
 		deleteCarriageReturn(msg);
@@ -351,7 +351,27 @@ void Server::processCommand(int clientFd, std::string command) {
         std::cerr << "[DEBUG] Receiver: " << receiver << std::endl;
 		int			receiverFd = findUserByNick(receiver);
 		this->sendPrivateMessage(_clients[clientFd]->getNickname(), msg, receiver);
-	} else {
+	} else if (std::strncmp(command.c_str(), "WHOIS ", 6) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth() && _clients[clientFd]->getIsOperator()){
+        std::string nickname = command.substr(6);
+        if (nickname.empty()){
+            response = "ERROR :No nickname especified\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
+        deleteCarriageReturn(nickname);
+        int userFd = findUserByNick(nickname);
+        if (userFd == -1){
+            response = "ERROR :No such nickname\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
+        std::string host = _clients[userFd]->getHost();
+        response = ":" SRV_NAME " " RPL_WHOISUSER " " + _clients[clientFd]->getNickname() + " " + nickname + " " + " " + _clients[userFd]->getUsername() + " " + host + " * :" + _clients[userFd]->getRealname() + "\r\n";
+        send(clientFd, response.c_str(), response.size(), 0);
+        response = ":" SRV_NAME " " RPL_ENDOFWHOIS " " + _clients[clientFd]->getNickname() + " :End of WHOIS list\r\n";
+        send(clientFd, response.c_str(), response.size(), 0);
+
+    } else {
         response = "ERROR :Unknown command ma G\r\n";
     }
     //for tests print client nickname, username and realname

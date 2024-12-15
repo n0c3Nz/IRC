@@ -44,6 +44,8 @@
 #define RPL_MOTDSTART "375"
 #define RPL_MOTD "372"
 #define RPL_ENDOFMOTD "376"
+#define RPL_WHOISUSER "311"
+#define RPL_ENDOFWHOIS "318"
 
 class Server {
 	private:
