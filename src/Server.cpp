@@ -130,13 +130,13 @@ void setNonBlocking(int socketFd) {
 
 void Server::handshake(int clientFd){
     std::string response;
-    response = ":" SRV_NAME " " RPL_WELCOME " c3nz :Welcome to the IRC Network c3nz\r\n";
+    response = ":" SRV_NAME " " RPL_WELCOME " " + _clients[clientFd]->getNickname() + " :Welcome to the IRC Network " + _clients[clientFd]->getNickname() + "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
-    response = ":" SRV_NAME " " RPL_YOURHOST " c3nz :Your host is c3nz, running version " SRV_VERSION "\r\n";
+    response = ":" SRV_NAME " " RPL_YOURHOST " " + _clients[clientFd]->getNickname() + " :Your host is c3nz, running version " SRV_VERSION "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
-    response = ":" SRV_NAME " " RPL_CREATED " c3nz :This server" SRV_NAME " was created " __DATE__ " " __TIME__ "\r\n";
+    response = ":" SRV_NAME " " RPL_CREATED " " + _clients[clientFd]->getNickname() + " :This server" SRV_NAME " was created " __DATE__ " " __TIME__ "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
-    response = ":" SRV_NAME " " RPL_MYINFO " c3nz :This server" SRV_NAME " " SRV_VERSION " Gikl OV" "\r\n";
+    response = ":" SRV_NAME " " RPL_MYINFO " " + _clients[clientFd]->getNickname() + " :This server" SRV_NAME " " SRV_VERSION " Gikl OV" "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
     motd(clientFd);
 }
@@ -303,7 +303,7 @@ void Server::processCommand(int clientFd, std::string command) {
             return;
         }
         //return;
-    }else if (std::strncmp(command.c_str(), "NICK ", 5) == 0 && _clients[clientFd]->getPwdSent()){
+    }else if (std::strncmp(command.c_str(), "NICK ", 5) == 0 && _clients[clientFd]->getPwdSent()){// Este && es para verificar que se haya enviado la password correcta previamente
         std::cout << "[LOG] COMMAND: NICK DETECTADO" << std::endl;
         std::string nickname = command.substr(5);
         if (checkEmptyAndAlnum(nickname)){
@@ -345,8 +345,9 @@ void Server::processCommand(int clientFd, std::string command) {
 		int	end = command.find(':');
 		std::string msg = command.substr(end + 1);
 		deleteCarriageReturn(msg);
-		int	espacio = command.find(':');
-		std::string receiver = command.substr(8, espacio - 9);
+		int	espacio = command.find(':') - 1;
+		std::string receiver = command.substr(8, espacio - 8);
+        std::cerr << "[DEBUG] Receiver: " << receiver << std::endl;
 		int			receiverFd = findUserByNick(receiver);
 		this->sendPrivateMessage(_clients[clientFd]->getNickname(), msg, receiver);
 	} else {
