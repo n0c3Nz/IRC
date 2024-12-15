@@ -23,7 +23,9 @@
 #include <errno.h>
 #include <cstring>
 #include <ErrorHandler.hpp>
-#include <Client.hpp>
+#include "Client.hpp"
+
+class Client;
 
 class Channel {
 	private:
@@ -40,6 +42,8 @@ class Channel {
 		Channel(const Channel &copy);
 		Channel &operator=(const Channel &copy);
 		~Channel();
+		std::string		getName() const;
+		void			addClient(Client &client);
 };
 
 

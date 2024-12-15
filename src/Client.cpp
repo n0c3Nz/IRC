@@ -103,3 +103,19 @@ void Client::setIsAuth(void){
 void Client::setPwdSent(void){
 	this->_pwdSent = true;
 }
+
+bool Client::alreadyJoined(const std::string &channelName) const
+{
+	for (size_t i; i < this->_joinedChannels.size(); i++)
+	{
+		if (this->_joinedChannels[i] == channelName)
+			return true;
+	}
+	return false;
+}
+
+void	Client::joinChannel(Channel &channel)
+{
+	if (!this->alreadyJoined(channel.getName()))
+		this->_joinedChannels.push_back(channel.getName());
+}

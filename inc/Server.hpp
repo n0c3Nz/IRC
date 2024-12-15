@@ -89,6 +89,9 @@ class Server {
 		void nick(int clientFd, std::string nickname);
 		void user(int clientFd, std::string username, std::string realname);
 		void motd(int clientFd);
+		void joinChannelServerSide(Channel &channel, int clientFd);
+		void sendPrivateMessage(std::string senderNick, std::string msg, std::string receiverNick);
+		int  findUserByNick(const std::string &nick);
 };
 
 void setNonBlocking(int socketFd);

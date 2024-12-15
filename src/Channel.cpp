@@ -24,3 +24,23 @@ Channel &Channel::operator=(const Channel &copy) {
 
 Channel::~Channel() {
 }
+
+std::string		Channel::getName() const
+{
+	return this->_name;
+}
+
+static	bool	alreadyIn(std::vector<std::string> members, std::string pending)
+{
+	for (size_t i = 0; i < members.size(); i++)
+		if (members[i] == pending)
+			return true;
+	return false;
+}
+
+void		Channel::addClient(Client &client)
+{
+	if (!alreadyIn(_members, client.getNickname()))
+		_members.push_back(client.getNickname());
+	std::cerr << "[DEBUG] Cliente añadido: " << client.getNickname() << " al canal: " << this->_name << std::endl;
+}

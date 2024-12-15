@@ -245,6 +245,33 @@ int Server::checkHash(int clientFd){
     return 0;
 }
 
+void	Server::joinChannelServerSide(Channel &channel, int clientFd)
+{
+	channel.addClient(*_clients[clientFd]);
+	_clients[clientFd]->joinChannel(channel);
+}
+
+void	Server::sendPrivateMessage(std::string senderNick, std::string msg, std::string receiverNick)
+{ 
+	// for (std::map<int, std::shared_ptr<Client>>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+	// 	std::cerr << "[DEBUG] fd: " << it->second->getSocket() << " Nick: " << it->second->getNickname() << std::endl;
+	// std::cerr << "[DEBUG] MENSAJE DETECTADO: " << msg << std::endl;
+	int senderFd = findUserByNick(senderNick);
+	int	receiverFd = findUserByNick(receiverNick);
+	std::cerr << "[DEBUG] SENDER FD: " << senderFd << "RECEIVER FD: " << receiverFd << std::endl;
+	std::string fullMsg = ':' + senderNick + " PRIVMSG " + receiverNick + " :" + msg + "\r\n";
+	if (senderFd != receiverFd  && receiverFd != -1)
+	 	send(receiverFd, fullMsg.c_str(), fullMsg.size(), 0);
+}
+
+int	Server::findUserByNick(const std::string &nick)
+{
+	for (std::map<int, std::shared_ptr<Client>>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+		if (it->second->getNickname() == nick)
+			return it->second->getSocket();
+	return (-1);
+}
+
 void Server::processCommand(int clientFd, std::string command) {
     std::string response;
     if (std::strncmp(command.c_str(), "QUIT", 4) == 0){
@@ -313,7 +340,16 @@ void Server::processCommand(int clientFd, std::string command) {
         }
         handshake(clientFd);
         //return;
-    } else {
+    }
+	else if (std::strncmp(command.c_str(), "PRIVMSG ", 8) == 0 && _clients[clientFd]->getPwdSent()) {
+		int	end = command.find(':');
+		std::string msg = command.substr(end + 1);
+		deleteCarriageReturn(msg);
+		int	espacio = command.find(':');
+		std::string receiver = command.substr(8, espacio - 9);
+		int			receiverFd = findUserByNick(receiver);
+		this->sendPrivateMessage(_clients[clientFd]->getNickname(), msg, receiver);
+	} else {
         response = "ERROR :Unknown command ma G\r\n";
     }
     //for tests print client nickname, username and realname

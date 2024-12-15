@@ -23,7 +23,9 @@
 #include <errno.h>
 #include <cstring>
 #include <ErrorHandler.hpp>
+#include "Channel.hpp"
 
+class Channel;
 class Client {
 	private:
 		int 							_socket;
@@ -59,6 +61,8 @@ class Client {
 		void setIsOperator(bool isOperator);
 		void setIsAuth(void);
 		void setPwdSent(void);
+		void	joinChannel(Channel &channel);
+		bool	alreadyJoined(const std::string &channelName) const;
 };
 
 
