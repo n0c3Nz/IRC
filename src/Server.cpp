@@ -274,20 +274,24 @@ int	Server::findUserByNick(const std::string &nick)
 
 void	Server::sendChannelMessage(const std::string &senderNick, const std::string &msg, const std::string &channelName)
 {
-	for (size_t i = 0; i <= this->_channels.size(); i++)
-	{
+	for (size_t i = 0; i < this->_channels.size(); i++)
 		if (this->_channels[i].getName() == channelName)
+		{
+			std::cerr << "[DEBUG] CANALES: " << this->_channels[i].getName() << std::endl;	
 			this->_channels[i].sendMsg(senderNick, msg);
-	}
+		}
 }
 
 Channel& Server::findOrCreateChannel(std::string channelName)
 {
-	for (size_t i = 0; i <= this->_channels.size(); i++)
+	for (size_t i = 0; i < this->_channels.size(); i++)
 		if (this->_channels[i].getName() == channelName)
+		{
+			std::cerr << "[DEBUG] CANALES 2: " << this->_channels[i].getName() << std::endl;
 			return this->_channels[i];
-	  this->_channels.push_back(Channel(channelName));
-    	return this->_channels.back();
+		}
+	this->_channels.push_back(Channel(channelName));
+    return this->_channels.back();
 }
 
 void Server::processCommand(int clientFd, std::string command) {
@@ -363,14 +367,17 @@ void Server::processCommand(int clientFd, std::string command) {
 		int num = command.find('#');
 		if (num != std::string::npos) //channel
 		{
+			std::cerr << "[DEBUG] MENSAJE BRUTO DE CLIENTE: " << command << std::endl;
 			int	end = command.find(':');
 			std::string msg = command.substr(end + 1);
 			deleteCarriageReturn(msg);
+			std::cerr << "[DEBUG] MENSAJE DE CLIENTE: " << msg << std::endl;
 			int	espacio = command.find(':');
 			std::string channelName = command.substr(8, espacio - 9);
+			std::cerr << "[DEBUG] NOMBRE DEL CANAL: " << channelName << std::endl;
 			this->sendChannelMessage(_clients[clientFd]->getNickname(), msg, channelName);
 		}
-	else // private message
+		else // private message
 		{
 			int	end = command.find(':');
 			std::string msg = command.substr(end + 1);

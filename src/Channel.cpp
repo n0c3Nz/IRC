@@ -32,7 +32,7 @@ std::string		Channel::getName() const
 
 bool	Channel::alreadyIn(const std::string &nickName)
 {
-	for (size_t i = 0; i <= this->_members.size(); i++)
+	for (size_t i = 0; i < this->_members.size(); i++)
 		if (this->_members[i].getNickname() == nickName)
 			return true;
 	return false;
@@ -46,7 +46,7 @@ void		Channel::addClient(Client &client)
 
 int		Channel::findUserFd(const std::string &nick) const
 {
-	for (size_t i = 0; i <= this->_members.size(); i++)
+	for (size_t i = 0; i < this->_members.size(); i++)
 		if (this->_members[i].getNickname() == nick)
 			return this->_members[i].getSocket();
 	return 0;
@@ -54,7 +54,7 @@ int		Channel::findUserFd(const std::string &nick) const
 
 std::string	Channel::getUserByNick(const std::string &nickName) const
 {
-	for (size_t i = 0; i <= this->_members.size(); i++)
+	for (size_t i = 0; i < this->_members.size(); i++)
 		if (this->_members[i].getNickname() == nickName)
 			return this->_members[i].getUsername();
 	return 0;
@@ -64,10 +64,12 @@ void		Channel::sendMsg(const std::string &senderNick, const std::string &msg)
 {
 	int	senderFd = findUserFd(senderNick);
 	std::string senderUser = getUserByNick(senderNick);
-	std::string fullMsg = ":" + senderNick + "!" + senderUser + "@127.0.0.1" + " PRIVMSG #" + this->getName() + " :" + msg + "\r\n";
-	for (size_t i = 0; i <= this->_members.size(); i++)
+	std::string fullMsg = ":" + senderNick + "!" + senderUser + "@127.0.0.1" + " PRIVMSG " + this->getName() + " :" + msg + "\r\n";
+	std::cerr << "[DEBUG] FULL MSG: " << fullMsg << std::endl;
+	for (size_t i = 0; i < this->_members.size(); i++)
 	{
 		int receiverFd = findUserFd(this->_members[i].getNickname());
+		std::cerr << "[DEBUG] RECEIVERS: " << this->_members[i].getNickname() << std::endl;
 		if (receiverFd != senderFd && receiverFd != -1)
 		{
 			send(receiverFd, fullMsg.c_str(), fullMsg.size(), 0);
