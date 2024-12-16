@@ -272,6 +272,24 @@ int	Server::findUserByNick(const std::string &nick)
 	return (-1);
 }
 
+void	Server::sendChannelMessage(const std::string &senderNick, const std::string &msg, const std::string &channelName)
+{
+	for (size_t i = 0; i <= this->_channels.size(); i++)
+	{
+		if (this->_channels[i].getName() == channelName)
+			this->_channels[i].sendMsg(senderNick, msg);
+	}
+}
+
+Channel& Server::findOrCreateChannel(std::string channelName)
+{
+	for (size_t i = 0; i <= this->_channels.size(); i++)
+		if (this->_channels[i].getName() == channelName)
+			return this->_channels[i];
+	  this->_channels.push_back(Channel(channelName));
+    	return this->_channels.back();
+}
+
 void Server::processCommand(int clientFd, std::string command) {
     std::string response;
     if (std::strncmp(command.c_str(), "QUIT", 4) == 0){
@@ -342,14 +360,33 @@ void Server::processCommand(int clientFd, std::string command) {
         //return;
     }
 	else if (std::strncmp(command.c_str(), "PRIVMSG ", 8) == 0 && _clients[clientFd]->getPwdSent()) {
-		int	end = command.find(':');
-		std::string msg = command.substr(end + 1);
-		deleteCarriageReturn(msg);
-		int	espacio = command.find(':');
-		std::string receiver = command.substr(8, espacio - 9);
-		int			receiverFd = findUserByNick(receiver);
-		this->sendPrivateMessage(_clients[clientFd]->getNickname(), msg, receiver);
-	} else {
+		int num = command.find('#');
+		if (num != std::string::npos) //channel
+		{
+			int	end = command.find(':');
+			std::string msg = command.substr(end + 1);
+			deleteCarriageReturn(msg);
+			int	espacio = command.find(':');
+			std::string channelName = command.substr(8, espacio - 9);
+			this->sendChannelMessage(_clients[clientFd]->getNickname(), msg, channelName);
+		}
+	else // private message
+		{
+			int	end = command.find(':');
+			std::string msg = command.substr(end + 1);
+			deleteCarriageReturn(msg);
+			int	espacio = command.find(':');
+			std::string receiver = command.substr(8, espacio - 9);
+			int			receiverFd = findUserByNick(receiver);
+			this->sendPrivateMessage(_clients[clientFd]->getNickname(), msg, receiver);
+		}
+	}
+	else if (std::strncmp(command.c_str(), "JOIN ", 5) == 0 && _clients[clientFd]->getPwdSent())
+	{
+		int	num = command.find('#');
+		std::string channelName = command.substr(num);
+		joinChannelServerSide(findOrCreateChannel(channelName), clientFd);
+	}else {
         response = "ERROR :Unknown command ma G\r\n";
     }
     //for tests print client nickname, username and realname

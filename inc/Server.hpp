@@ -91,7 +91,9 @@ class Server {
 		void motd(int clientFd);
 		void joinChannelServerSide(Channel &channel, int clientFd);
 		void sendPrivateMessage(std::string senderNick, std::string msg, std::string receiverNick);
+		void sendChannelMessage(const std::string &senderNick, const std::string &msg, const std::string &channelName);
 		int  findUserByNick(const std::string &nick);
+		Channel& findOrCreateChannel(std::string channelName);
 };
 
 void setNonBlocking(int socketFd);

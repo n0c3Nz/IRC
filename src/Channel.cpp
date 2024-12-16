@@ -30,17 +30,47 @@ std::string		Channel::getName() const
 	return this->_name;
 }
 
-static	bool	alreadyIn(std::vector<std::string> members, std::string pending)
+bool	Channel::alreadyIn(const std::string &nickName)
 {
-	for (size_t i = 0; i < members.size(); i++)
-		if (members[i] == pending)
+	for (size_t i = 0; i <= this->_members.size(); i++)
+		if (this->_members[i].getNickname() == nickName)
 			return true;
 	return false;
 }
-
 void		Channel::addClient(Client &client)
 {
-	if (!alreadyIn(_members, client.getNickname()))
-		_members.push_back(client.getNickname());
-	std::cerr << "[DEBUG] Cliente añadido: " << client.getNickname() << " al canal: " << this->_name << std::endl;
+ 	if (!alreadyIn(client.getNickname()))
+ 		_members.push_back(client);
+ 	std::cerr << "[DEBUG] Cliente añadido: " << client.getNickname() << " al canal: " << this->_name << std::endl;
+ }
+
+int		Channel::findUserFd(const std::string &nick) const
+{
+	for (size_t i = 0; i <= this->_members.size(); i++)
+		if (this->_members[i].getNickname() == nick)
+			return this->_members[i].getSocket();
+	return 0;
+}
+
+std::string	Channel::getUserByNick(const std::string &nickName) const
+{
+	for (size_t i = 0; i <= this->_members.size(); i++)
+		if (this->_members[i].getNickname() == nickName)
+			return this->_members[i].getUsername();
+	return 0;
+}
+
+void		Channel::sendMsg(const std::string &senderNick, const std::string &msg)
+{
+	int	senderFd = findUserFd(senderNick);
+	std::string senderUser = getUserByNick(senderNick);
+	std::string fullMsg = ":" + senderNick + "!" + senderUser + "@127.0.0.1" + " PRIVMSG #" + this->getName() + " :" + msg + "\r\n";
+	for (size_t i = 0; i <= this->_members.size(); i++)
+	{
+		int receiverFd = findUserFd(this->_members[i].getNickname());
+		if (receiverFd != senderFd && receiverFd != -1)
+		{
+			send(receiverFd, fullMsg.c_str(), fullMsg.size(), 0);
+		}
+	}
 }

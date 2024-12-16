@@ -31,7 +31,7 @@ class Channel {
 	private:
 		std::string						_name;
 		std::string						_topic;
-		std::vector<std::string>		_members;
+		std::vector<Client>				_members;
 		std::vector<std::string>		_operators;
 		std::string						_password;
 		bool							_isPrivate;
@@ -44,6 +44,10 @@ class Channel {
 		~Channel();
 		std::string		getName() const;
 		void			addClient(Client &client);
+		void			sendMsg(const std::string &senderNick, const std::string &msg);
+		int 			findUserFd(const std::string &senderNick) const;
+		std::string		getUserByNick(const std::string &nickName) const;
+		bool			alreadyIn(const std::string &nickName);
 };
 
 
