@@ -30,6 +30,11 @@ std::string		Channel::getName() const
 	return this->_name;
 }
 
+std::vector<Client>	Channel::getMembers() const
+{
+	return this->_members;
+}
+
 bool	Channel::alreadyIn(const std::string &nickName)
 {
 	for (size_t i = 0; i < this->_members.size(); i++)
@@ -37,12 +42,26 @@ bool	Channel::alreadyIn(const std::string &nickName)
 			return true;
 	return false;
 }
+
 void		Channel::addClient(Client &client)
 {
- 	if (!alreadyIn(client.getNickname()))
+ 	if (alreadyIn(client.getNickname()) == false)
  		_members.push_back(client);
  	std::cerr << "[DEBUG] Cliente añadido: " << client.getNickname() << " al canal: " << this->_name << std::endl;
- }
+}
+
+void Channel::removeClient(Client &client)
+{
+	for (size_t i = 0; i < this->_members.size(); i++)
+	{
+		if (this->_members[i].getNickname() == client.getNickname())
+		{
+			this->_members.erase(this->_members.begin() + i);
+			std::cerr << "[DEBUG] Cliente eliminado: " << client.getNickname() << " del canal: " << this->_name << std::endl;
+			return;
+		}
+	}
+}
 
 int		Channel::findUserFd(const std::string &nick) const
 {
@@ -52,7 +71,7 @@ int		Channel::findUserFd(const std::string &nick) const
 	return 0;
 }
 
-std::string	Channel::getUserByNick(const std::string &nickName) const
+std::string	Channel::getUsernameByNick(const std::string &nickName) const
 {
 	for (size_t i = 0; i < this->_members.size(); i++)
 		if (this->_members[i].getNickname() == nickName)
@@ -60,11 +79,11 @@ std::string	Channel::getUserByNick(const std::string &nickName) const
 	return 0;
 }
 
-void		Channel::sendMsg(const std::string &senderNick, const std::string &msg)
+void		Channel::sendMsg(const std::string &senderNick, const std::string &host, const std::string &msg)
 {
 	int	senderFd = findUserFd(senderNick);
-	std::string senderUser = getUserByNick(senderNick);
-	std::string fullMsg = ":" + senderNick + "!" + senderUser + "@127.0.0.1" + " PRIVMSG " + this->getName() + " :" + msg + "\r\n";
+	std::string senderUsername = getUsernameByNick(senderNick);
+	std::string fullMsg = ":" + senderNick + "!" + senderUsername + "@" + host + " PRIVMSG " + this->getName() + " :" + msg + "\r\n";
 	std::cerr << "[DEBUG] FULL MSG: " << fullMsg << std::endl;
 	for (size_t i = 0; i < this->_members.size(); i++)
 	{

@@ -130,13 +130,13 @@ void setNonBlocking(int socketFd) {
 
 void Server::handshake(int clientFd){
     std::string response;
-    response = ":" SRV_NAME " " RPL_WELCOME " c3nz :Welcome to the IRC Network c3nz\r\n";
+    response = ":" SRV_NAME " " RPL_WELCOME " " + _clients[clientFd]->getNickname() + " :Welcome to the IRC Network " + _clients[clientFd]->getNickname() + "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
-    response = ":" SRV_NAME " " RPL_YOURHOST " c3nz :Your host is c3nz, running version " SRV_VERSION "\r\n";
+    response = ":" SRV_NAME " " RPL_YOURHOST " " + _clients[clientFd]->getNickname() + " :Your host is c3nz, running version " SRV_VERSION "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
-    response = ":" SRV_NAME " " RPL_CREATED " c3nz :This server" SRV_NAME " was created " __DATE__ " " __TIME__ "\r\n";
+    response = ":" SRV_NAME " " RPL_CREATED " " + _clients[clientFd]->getNickname() + " :This server" SRV_NAME " was created " __DATE__ " " __TIME__ "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
-    response = ":" SRV_NAME " " RPL_MYINFO " c3nz :This server" SRV_NAME " " SRV_VERSION " Gikl OV" "\r\n";
+    response = ":" SRV_NAME " " RPL_MYINFO " " + _clients[clientFd]->getNickname() + " :This server" SRV_NAME " " SRV_VERSION " Gikl OV" "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
     motd(clientFd);
 }
@@ -272,26 +272,63 @@ int	Server::findUserByNick(const std::string &nick)
 	return (-1);
 }
 
-void	Server::sendChannelMessage(const std::string &senderNick, const std::string &msg, const std::string &channelName)
+void	Server::sendChannelMessage(int clientFd, const std::string &msg, const std::string &channelName)
 {
+    std::string senderNick = _clients[clientFd]->getNickname();
+    std::string host = _clients[clientFd]->getHost();
 	for (size_t i = 0; i < this->_channels.size(); i++)
-		if (this->_channels[i].getName() == channelName)
+		if (_channels[i].getName() == channelName)
 		{
 			std::cerr << "[DEBUG] CANALES: " << this->_channels[i].getName() << std::endl;	
-			this->_channels[i].sendMsg(senderNick, msg);
+			this->_channels[i].sendMsg(senderNick, host, msg);
 		}
 }
 
-Channel& Server::findOrCreateChannel(std::string channelName)
+void Server::sendConfirmJoin(int clientFd, const std::string &channelName){
+    std::string response;
+    std::string allMembers;
+    //preparar un string con los nicks del canal separados por espacios
+    for (size_t i = 0; i < _channels.size(); i++){
+        if (_channels[i].getName() == channelName){
+            for (size_t j = 0; j < _channels[i].getMembers().size(); j++){
+                allMembers += _channels[i].getMembers()[j].getNickname() + " ";
+            }
+        }
+    }
+    //Topic
+    response = ":" SRV_NAME " " RPL_TOPIC " " + _clients[clientFd]->getNickname() + " " + channelName + " :No topic is set\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_NAMREPLY " " + _clients[clientFd]->getNickname() + " = " + channelName + " :" + allMembers + "\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_ENDOFNAMES " " + _clients[clientFd]->getNickname() + " " + channelName + " :End of /NAMES list\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    //Enviar la notificación a los demás miembros del canal de que un nuevo usuario se ha unido
+    for (size_t i = 0; i < _channels.size(); i++){
+        if (_channels[i].getName() == channelName){
+            std::string notification = ":" + _clients[clientFd]->getNickname() + " JOIN " + channelName + "\r\n";
+            for (size_t j = 0; j < _channels[i].getMembers().size(); j++){
+                if (_channels[i].getMembers()[j].getSocket() != clientFd){
+                    std::cerr << "[DEBUG] Enviando notificación: " << notification << std::endl;
+                    send(_channels[i].getMembers()[j].getSocket(), notification.c_str(), notification.size(), 0);
+                }
+            }
+        }
+    }
+}
+
+Channel& Server::findOrCreateChannel(std::string channelName, int clientFd)
 {
-	for (size_t i = 0; i < this->_channels.size(); i++)
-		if (this->_channels[i].getName() == channelName)
+    //Comprobar si el canal ya existe
+	for (size_t i = 0; i < this->_channels.size(); i++){
+        std::cerr << "[DEBUG] Comparando canales: " << this->_channels[i].getName() << " con " << channelName << std::endl;
+		if (std::strncmp(this->_channels[i].getName().c_str(), channelName.c_str(), channelName.length()) == 0)
 		{
-			std::cerr << "[DEBUG] CANALES 2: " << this->_channels[i].getName() << std::endl;
-			return this->_channels[i];
+            std::cerr << "[DEBUG] CANAL EXISTENTE: " << this->_channels[i].getName() << std::endl;
+			return this->_channels[i];//Si ya existe retornamos el canal
 		}
+    }
 	this->_channels.push_back(Channel(channelName));
-    return this->_channels.back();
+    return _channels[_channels.size() - 1];
 }
 
 void Server::processCommand(int clientFd, std::string command) {
@@ -375,7 +412,7 @@ void Server::processCommand(int clientFd, std::string command) {
 			int	espacio = command.find(':');
 			std::string channelName = command.substr(8, espacio - 9);
 			std::cerr << "[DEBUG] NOMBRE DEL CANAL: " << channelName << std::endl;
-			this->sendChannelMessage(_clients[clientFd]->getNickname(), msg, channelName);
+			this->sendChannelMessage(clientFd, msg, channelName);
 		}
 		else // private message
 		{
@@ -390,9 +427,26 @@ void Server::processCommand(int clientFd, std::string command) {
 	}
 	else if (std::strncmp(command.c_str(), "JOIN ", 5) == 0 && _clients[clientFd]->getPwdSent())
 	{
+        deleteCarriageReturn(command);
 		int	num = command.find('#');
 		std::string channelName = command.substr(num);
-		joinChannelServerSide(findOrCreateChannel(channelName), clientFd);
+        // comprobar si ya nos hemos unido a este canal
+        for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
+            if (_clients[clientFd]->getJoinedChannels()[i] == channelName){
+                std::cerr << "[DEBUG] Ya nos hemos unido a este canal" << std::endl;
+                return;
+            }
+        }
+		joinChannelServerSide(findOrCreateChannel(channelName, clientFd), clientFd);
+        std::cerr << "[DEBUG] Canales creados: " << _channels.size() << std::endl;
+        for (size_t i = 0; i < _channels.size(); i++){
+            std::cerr << "[DEBUG] Nombre del canal: " << _channels[i].getName() << std::endl;
+        }
+        std::cerr << "[DEBUG] Este usuario está en los siguientes canales: " << std::endl;
+        for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
+            std::cerr << "[DEBUG] " << _clients[clientFd]->getJoinedChannels()[i] << std::endl;
+        }
+        sendConfirmJoin(clientFd, channelName);
 	}else {
         response = "ERROR :Unknown command ma G\r\n";
     }
@@ -417,7 +471,7 @@ void Server::handleClientData(int clientFd) {
     }
 
     if (bytesRead < 0) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        if (errno == 11) {
             // No hay datos por ahora
             std::cerr << "[DEBUG] recv devolvió EAGAIN/EWOULDBLOCK para cliente: " << clientFd << std::endl;
             return;

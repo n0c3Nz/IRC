@@ -43,10 +43,12 @@ class Channel {
 		Channel &operator=(const Channel &copy);
 		~Channel();
 		std::string		getName() const;
+		std::vector<Client>	getMembers() const;
 		void			addClient(Client &client);
-		void			sendMsg(const std::string &senderNick, const std::string &msg);
+		void			removeClient(Client &client);
+		void			sendMsg(const std::string &senderNick, const std::string &host,const std::string &msg);
 		int 			findUserFd(const std::string &senderNick) const;
-		std::string		getUserByNick(const std::string &nickName) const;
+		std::string		getUsernameByNick(const std::string &nickName) const;
 		bool			alreadyIn(const std::string &nickName);
 };
 

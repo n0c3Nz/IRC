@@ -41,9 +41,14 @@
 #define RPL_YOURHOST "002"
 #define RPL_CREATED "003"
 #define RPL_MYINFO "004"
+
 #define RPL_MOTDSTART "375"
 #define RPL_MOTD "372"
 #define RPL_ENDOFMOTD "376"
+
+#define RPL_TOPIC "332"
+#define RPL_NAMREPLY "353"
+#define RPL_ENDOFNAMES "366"
 
 class Server {
 	private:
@@ -91,9 +96,10 @@ class Server {
 		void motd(int clientFd);
 		void joinChannelServerSide(Channel &channel, int clientFd);
 		void sendPrivateMessage(std::string senderNick, std::string msg, std::string receiverNick);
-		void sendChannelMessage(const std::string &senderNick, const std::string &msg, const std::string &channelName);
+		void sendChannelMessage(int clientFd, const std::string &msg, const std::string &channelName);
 		int  findUserByNick(const std::string &nick);
-		Channel& findOrCreateChannel(std::string channelName);
+		Channel& findOrCreateChannel(std::string channelName, int clientFd);
+		void sendConfirmJoin(int clientFd, const std::string &channelName);
 };
 
 void setNonBlocking(int socketFd);

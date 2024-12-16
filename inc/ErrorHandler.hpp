@@ -40,6 +40,9 @@ class ErrorHandler : public std::exception {
 			return ErrorHandler("Error: Unable to create Epoll socket.");
 		}
 
+		static ErrorHandler GetPeerName() {
+			return ErrorHandler("Error: Unable to get peer name.");
+		}
 };
 
 
