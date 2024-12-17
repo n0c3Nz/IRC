@@ -52,6 +52,9 @@
 #define RPL_NAMREPLY "353"
 #define RPL_ENDOFNAMES "366"
 
+#define ERR_NOTONCHANNEL "442"
+#define ERR_NOSUCHCHANNEL "403"
+
 class Server {
 	private:
 		int 							_port;
@@ -92,10 +95,12 @@ class Server {
 		//Handshake
 		void handshake(int clientFd);
 		//Commands
-		void quit(int clientFd);
+		void quit(int clientFd, std::string msg);
 		void nick(int clientFd, std::string nickname);
 		void user(int clientFd, std::string username, std::string realname);
 		void motd(int clientFd);
+		int checkChannelExistence(int clientFd, const std::string &channelName);
+		int checkChannelMembership(int clientFd, const std::string &channelName);
 		void joinChannelServerSide(Channel &channel, int clientFd);
 		void sendPrivateMessage(std::string senderNick, std::string msg, std::string receiverNick);
 		void sendChannelMessage(int clientFd, const std::string &msg, const std::string &channelName);

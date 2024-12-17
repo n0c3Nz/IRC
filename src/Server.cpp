@@ -140,13 +140,31 @@ void Server::handshake(int clientFd){
     send(clientFd, response.c_str(), response.size(), 0);
     motd(clientFd);
 }
-
-void Server::quit(int clientFd){
+// Comandos
+void Server::quit(int clientFd, std::string message){
     std::string response;
-    response = "QUIT :Client disconnected por la gloria de mi padre\r\n";
-    send(clientFd, response.c_str(), response.size(), 0);
-    closeConnection(clientFd);
+    //Tengo que enviar un quit a todos los canales a los que pertenece el cliente
+    for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
+        //:<nick>!<user>@<host> QUIT :<razón>
+        std::string notification = ":" + _clients[clientFd]->getNickname() + "!" + _clients[clientFd]->getUsername() + "@" + _clients[clientFd]->getHost() + " QUIT :" + message + "\r\n";
+        for (size_t j = 0; j < _channels.size(); j++){
+            if (_channels[j].getName() == _clients[clientFd]->getJoinedChannels()[i]){
+                for (size_t k = 0; k < _channels[j].getMembers().size(); k++){
+                    send(_channels[j].getMembers()[k].getSocket(), notification.c_str(), notification.size(), 0);
+                }
+            }
+        }
+    }
+    //Tengo que eliminar al cliente de los canales a los que pertenece
+    for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
+        for (size_t j = 0; j < _channels.size(); j++){
+            if (_channels[j].getName() == _clients[clientFd]->getJoinedChannels()[i]){
+                _channels[j].removeClient(*_clients[clientFd]);
+            }
+        }
+    }
     std::cout << "Cliente desconectado" << std::endl;
+    closeConnection(clientFd);
 }
 
 void Server::nick(int clientFd, std::string nickname){
@@ -182,6 +200,8 @@ void Server::motd(int clientFd){
     response = ":" SRV_NAME " " RPL_ENDOFMOTD " " + nickname + " :End of /MOTD command.\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
 }
+
+// -------------------
 
 int checkEmptyAndAlnum(std::string str){
     if (str.empty()){
@@ -329,10 +349,37 @@ Channel& Server::findOrCreateChannel(std::string channelName, int clientFd)
     return _channels[_channels.size() - 1];
 }
 
+int Server::checkChannelExistence(int clientFd, const std::string &channelName){
+    for (size_t i = 0; i < _channels.size(); i++){
+        if (_channels[i].getName() == channelName){
+            return 0;
+        }
+    }
+    //ERR_NOSUCHCHANNEL (:irc.servidor.com 403 paco #general :No such channel)
+    std::string response = ":" SRV_NAME " " ERR_NOSUCHCHANNEL " " + _clients[clientFd]->getNickname() + " " + channelName + " :No such channel\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    return 1;
+}
+
+int Server::checkChannelMembership(int clientFd, const std::string &channelName){
+    for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
+        if (_clients[clientFd]->getJoinedChannels()[i] == channelName){
+            return 0;
+        }
+    }//ERR_NOTONCHANNEL (:irc.servidor.com 442 paco #general :You're not on that channel)
+    std::string response = ":" SRV_NAME " " ERR_NOTONCHANNEL " " + _clients[clientFd]->getNickname() + " " + channelName + " :You're not on that channel\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    return 1;
+}
+
 void Server::processCommand(int clientFd, std::string command) {
     std::string response;
     if (std::strncmp(command.c_str(), "QUIT", 4) == 0){
-        quit(clientFd);
+        std::string msg = command.substr(5, command.length() - 6);
+        if (msg.empty()){
+            msg = "Client disconnected";
+        }
+        quit(clientFd, msg);
         return;
     }else if (std::strncmp(command.c_str(), "PING", 4) == 0){
         std::cout << "[LOG] COMMAND: PING DETECTADO" << std::endl;
@@ -443,7 +490,35 @@ void Server::processCommand(int clientFd, std::string command) {
             std::cerr << "[DEBUG] " << _clients[clientFd]->getJoinedChannels()[i] << std::endl;
         }
         sendConfirmJoin(clientFd, channelName);
-	}else if (std::strncmp(command.c_str(), "WHOIS ", 6) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth() && _clients[clientFd]->getIsOperator()){
+	}else if (std::strncmp(command.c_str(), "PART ", 5) == 0 && _clients[clientFd]->getPwdSent()){//PART #channel
+        //encontrar ':' para determinar cuando termina el nombre del canal y cuando empieza el mensaje
+        int pos = command.find(':');
+        if (pos == std::string::npos){
+            response = "ERROR :No message specified\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
+        std::string channelName = command.substr(5, pos - 6);
+        std::string msg = command.substr(pos + 1);
+        deleteCarriageReturn(channelName);
+        if (checkChannelExistence(clientFd, channelName) || checkChannelMembership(clientFd, channelName))
+            return;
+        for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){//Recorrer los canales a los que pertenece el cliente
+            if (_clients[clientFd]->getJoinedChannels()[i] == channelName){//Si el cliente pertenece al canal
+                for (size_t j = 0; j < _channels.size(); j++){//Recorrer los canales
+                    if (_channels[j].getName() == channelName){//Si el canal existe
+                        std::string notification = ":" + _clients[clientFd]->getNickname() + " PART " + channelName + " :" + msg + "\r\n";//Notificación de que el cliente ha abandonado el canal
+                        for (size_t k = 0; k < _channels[j].getMembers().size(); k++){//Enviar la notificación a los demás miembros del canal
+                            send(_channels[j].getMembers()[k].getSocket(), notification.c_str(), notification.size(), 0);
+                        }
+                        _channels[j].removeClient(*_clients[clientFd]);//Eliminar al cliente del canal
+                        _clients[clientFd]->leaveChannel(channelName);//Eliminar el canal de los canales a los que pertenece el cliente
+                    }
+                }
+            }
+            
+        }
+    }else if (std::strncmp(command.c_str(), "WHOIS ", 6) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth() && _clients[clientFd]->getIsOperator()){
         std::cerr << "[DEBUG] WHOIS DETECTADO" << std::endl;
         std::string nickname = command.substr(6);
         if (nickname.empty()){
