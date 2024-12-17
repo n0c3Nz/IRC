@@ -201,6 +201,35 @@ void Server::motd(int clientFd){
     send(clientFd, response.c_str(), response.size(), 0);
 }
 
+void Server::names(int clientFd, std::string channelName){
+    std::string response;
+    if (channelName.empty()){
+            response = "ERROR :No channel specified\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+    }
+    if (checkChannelExistence(clientFd, channelName) || checkChannelMembership(clientFd, channelName))
+        return;
+    std::string allMembers;
+    //preparar un string con los nicks del canal separados por espacios
+    for (size_t i = 0; i < _channels.size(); i++){
+        if (_channels[i].getName() == channelName){
+            for (size_t j = 0; j < _channels[i].getMembers().size(); j++){
+                //aqui es donde tengo que detectar si es operador para añaddirle el @
+                if (_channels[i].isOperator(_channels[i].getMembers()[j].getNickname())){
+                    allMembers += "@" + _channels[i].getMembers()[j].getNickname() + " ";
+                }else{
+                    allMembers += _channels[i].getMembers()[j].getNickname() + " ";
+                }
+            }
+        }
+    }
+    response = ":" SRV_NAME " " RPL_NAMREPLY " " + _clients[clientFd]->getNickname() + " = " + channelName + " :" + allMembers + "\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_ENDOFNAMES " " + _clients[clientFd]->getNickname() + " " + channelName + " :End of /NAMES list\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+}
+
 // -------------------
 
 int checkEmptyAndAlnum(std::string str){
@@ -311,10 +340,17 @@ void Server::sendConfirmJoin(int clientFd, const std::string &channelName){
     for (size_t i = 0; i < _channels.size(); i++){
         if (_channels[i].getName() == channelName){
             for (size_t j = 0; j < _channels[i].getMembers().size(); j++){
-                allMembers += _channels[i].getMembers()[j].getNickname() + " ";
+                //aqui es donde tengo que detectar si es operador para añaddirle el @
+                if (_channels[i].isOperator(_channels[i].getMembers()[j].getNickname())){
+                    allMembers += "@" + _channels[i].getMembers()[j].getNickname() + " ";
+                }else{
+                    allMembers += _channels[i].getMembers()[j].getNickname() + " ";
+                }
             }
         }
     }
+    std::ostringstream responseStream;
+
     //Topic
     response = ":" SRV_NAME " " RPL_TOPIC " " + _clients[clientFd]->getNickname() + " " + channelName + " :No topic is set\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
@@ -490,7 +526,25 @@ void Server::processCommand(int clientFd, std::string command) {
             std::cerr << "[DEBUG] " << _clients[clientFd]->getJoinedChannels()[i] << std::endl;
         }
         sendConfirmJoin(clientFd, channelName);
-	}else if (std::strncmp(command.c_str(), "PART ", 5) == 0 && _clients[clientFd]->getPwdSent()){//PART #channel
+    }else if (std::strncmp(command.c_str(), "MODE ", 5) == 0 && _clients[clientFd]->getPwdSent()){
+        std::cerr << "[DEBUG] MODE DETECTADO" << std::endl;
+        std::string mode = command.substr(5);
+        deleteCarriageReturn(mode);
+        if (mode.empty()){
+            response = "ERROR :No mode specified\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
+        std::string channelName = mode.substr(0, mode.find(' '));
+        std::string modeStr = mode.substr(mode.find(' ') + 1);
+        if (checkChannelExistence(clientFd, channelName) || checkChannelMembership(clientFd, channelName))
+            return;
+        response = ":" SRV_NAME " " RPL_CHANNELMODEIS " " + _clients[clientFd]->getNickname() + " " + channelName + " +" + modeStr + "\r\n";
+        send(clientFd, response.c_str(), response.size(), 0);
+        //enviar RPL_CREATIONTIME
+        response = ":" SRV_NAME " " RPL_CREATIONTIME " " + _clients[clientFd]->getNickname() + " " + channelName + " " + std::to_string(time(NULL)) + "\r\n";
+        send(clientFd, response.c_str(), response.size(), 0);
+    }else if (std::strncmp(command.c_str(), "PART ", 5) == 0 && _clients[clientFd]->getPwdSent()){//PART #channel
         //encontrar ':' para determinar cuando termina el nombre del canal y cuando empieza el mensaje
         int pos = command.find(':');
         if (pos == std::string::npos){
@@ -518,6 +572,12 @@ void Server::processCommand(int clientFd, std::string command) {
             }
             
         }
+    }else if (std::strncmp(command.c_str(), "NAMES ", 6) == 0 && _clients[clientFd]->getPwdSent()){
+        std::cerr << "[DEBUG] NAMES DETECTADO" << std::endl;
+        std::string channelName = command.substr(6);
+        deleteCarriageReturn(channelName);
+        names(clientFd, channelName);
+
     }else if (std::strncmp(command.c_str(), "WHOIS ", 6) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth() && _clients[clientFd]->getIsOperator()){
         std::cerr << "[DEBUG] WHOIS DETECTADO" << std::endl;
         std::string nickname = command.substr(6);

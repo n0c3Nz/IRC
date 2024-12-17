@@ -55,6 +55,9 @@
 #define ERR_NOTONCHANNEL "442"
 #define ERR_NOSUCHCHANNEL "403"
 
+#define RPL_CHANNELMODEIS "324"
+#define RPL_CREATIONTIME "329"
+
 class Server {
 	private:
 		int 							_port;
@@ -99,6 +102,7 @@ class Server {
 		void nick(int clientFd, std::string nickname);
 		void user(int clientFd, std::string username, std::string realname);
 		void motd(int clientFd);
+		void names(int clientFd, std::string channelName);
 		int checkChannelExistence(int clientFd, const std::string &channelName);
 		int checkChannelMembership(int clientFd, const std::string &channelName);
 		void joinChannelServerSide(Channel &channel, int clientFd);
