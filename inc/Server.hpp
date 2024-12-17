@@ -52,6 +52,8 @@
 #define RPL_NAMREPLY "353"
 #define RPL_ENDOFNAMES "366"
 
+#define ERR_BADCHANNELKEY "475"
+
 class Server {
 	private:
 		int 							_port;
@@ -96,12 +98,15 @@ class Server {
 		void nick(int clientFd, std::string nickname);
 		void user(int clientFd, std::string username, std::string realname);
 		void motd(int clientFd);
-		void joinChannelServerSide(Channel &channel, int clientFd);
+		void joinChannelServerSide(std::map<std::string, std::string> channelKey, int clientFd);
 		void sendPrivateMessage(std::string senderNick, std::string msg, std::string receiverNick);
 		void sendChannelMessage(int clientFd, const std::string &msg, const std::string &channelName);
 		int  findUserByNick(const std::string &nick);
-		Channel& findOrCreateChannel(std::string channelName, int clientFd);
+		//Channel& findOrCreateChannel(std::string channelName, int clientFd);
 		void sendConfirmJoin(int clientFd, const std::string &channelName);
+		std::map<std::string, std::string>		parseJoinRequets(std::string request) const;
+		int		exist(const std::string &channelName) const;
+		int		authenticateChannel(const Channel &channel, const std::string &password) const;
 };
 
 void setNonBlocking(int socketFd);
