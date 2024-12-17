@@ -83,6 +83,13 @@ std::vector<std::string> Client::getJoinedChannels(void) const{
 	return this->_joinedChannels;
 }
 
+std::string Client::getHost(void) {
+	struct sockaddr_in clientAddr;
+    socklen_t clientAddrLen = sizeof(clientAddr);
+    if (getpeername(_socket, (struct sockaddr *)&clientAddr, &clientAddrLen) == -1)
+		throw ErrorHandler::GetPeerName();
+	return inet_ntoa(clientAddr.sin_addr);
+}
 // Setters
 
 void Client::setSocket(int socket){

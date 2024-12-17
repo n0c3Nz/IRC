@@ -41,7 +41,7 @@ class ErrorHandler : public std::exception {
 		}
 
 		static ErrorHandler GetPeerName() {
-			return ErrorHandler("Error: Unable to get peer name.");
+			return ErrorHandler("Unknown");
 		}
 };
 

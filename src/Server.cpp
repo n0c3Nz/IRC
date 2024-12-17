@@ -353,6 +353,7 @@ void Server::processCommand(int clientFd, std::string command) {
         }
         if (password == _password){
             _clients[clientFd]->setPwdSent();
+            std::cerr << "[DEBUG] Host: " << _clients[clientFd]->getHost() << std::endl;
         }
         else{
             response = "ERROR :Password incorrecto\r\n";
@@ -360,7 +361,7 @@ void Server::processCommand(int clientFd, std::string command) {
             return;
         }
         //return;
-    }else if (std::strncmp(command.c_str(), "NICK ", 5) == 0 && _clients[clientFd]->getPwdSent()){
+    }else if (std::strncmp(command.c_str(), "NICK ", 5) == 0 && _clients[clientFd]->getPwdSent()){// Este && es para verificar que se haya enviado la password correcta previamente
         std::cout << "[LOG] COMMAND: NICK DETECTADO" << std::endl;
         std::string nickname = command.substr(5);
         if (checkEmptyAndAlnum(nickname)){
@@ -371,7 +372,7 @@ void Server::processCommand(int clientFd, std::string command) {
         deleteCarriageReturn(nickname);
         nick(clientFd, nickname);
         //return;
-    } else if (std::strncmp(command.c_str(), "USER ", 5) == 0 && _clients[clientFd]->getPwdSent()){
+    }else if (std::strncmp(command.c_str(), "USER ", 5) == 0 && _clients[clientFd]->getPwdSent()){
         std::cout << "[LOG] COMMAND: USER DETECTADO" << std::endl;
         // Guardar la posicion del espacio desde command[5], es decir, el segundo espacio
         int pos = command.find(' ', 5);
@@ -445,7 +446,27 @@ void Server::processCommand(int clientFd, std::string command) {
             std::cerr << "[DEBUG] " << _clients[clientFd]->getJoinedChannels()[i] << std::endl;
         }
         sendConfirmJoin(clientFd, channelName);
-	}else {
+	}else if (std::strncmp(command.c_str(), "WHOIS ", 6) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth() && _clients[clientFd]->getIsOperator()){
+        std::string nickname = command.substr(6);
+        if (nickname.empty()){
+            response = "ERROR :No nickname especified\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
+        deleteCarriageReturn(nickname);
+        int userFd = findUserByNick(nickname);
+        if (userFd == -1){
+            response = "ERROR :No such nickname\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
+        std::string host = _clients[userFd]->getHost();
+        response = ":" SRV_NAME " " RPL_WHOISUSER " " + _clients[clientFd]->getNickname() + " " + nickname + " " + " " + _clients[userFd]->getUsername() + " " + host + " * :" + _clients[userFd]->getRealname() + "\r\n";
+        send(clientFd, response.c_str(), response.size(), 0);
+        response = ":" SRV_NAME " " RPL_ENDOFWHOIS " " + _clients[clientFd]->getNickname() + " :End of WHOIS list\r\n";
+        send(clientFd, response.c_str(), response.size(), 0);
+
+  }else {
         response = "ERROR :Unknown command ma G\r\n";
     }
     //for tests print client nickname, username and realname
@@ -471,7 +492,7 @@ void Server::handleClientData(int clientFd) {
     if (bytesRead < 0) {
         if (errno == 11) {
             // No hay datos por ahora
-            std::cerr << "[DEBUG] recv devolvió EAGAIN/EWOULDBLOCK para cliente: " << clientFd << std::endl;
+            std::cerr << "[DEBUG] recv devolvió EAGAIN/EWOULDBLOCK (= 11) para cliente: " << clientFd << std::endl;
             return;
         } else {
             // Error crítico, desconectar al cliente
