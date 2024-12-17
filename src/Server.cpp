@@ -398,8 +398,7 @@ void Server::processCommand(int clientFd, std::string command) {
         }
         handshake(clientFd);
         //return;
-    }
-	else if (std::strncmp(command.c_str(), "PRIVMSG ", 8) == 0 && _clients[clientFd]->getPwdSent()) {
+    }else if (std::strncmp(command.c_str(), "PRIVMSG ", 8) == 0 && _clients[clientFd]->getPwdSent()) {
 		int num = command.find('#');
 		if (num != std::string::npos) //channel
 		{
@@ -423,9 +422,7 @@ void Server::processCommand(int clientFd, std::string command) {
 			int			receiverFd = findUserByNick(receiver);
 			this->sendPrivateMessage(_clients[clientFd]->getNickname(), msg, receiver);
 		}
-	}
-	else if (std::strncmp(command.c_str(), "JOIN ", 5) == 0 && _clients[clientFd]->getPwdSent())
-	{
+	}else if (std::strncmp(command.c_str(), "JOIN ", 5) == 0 && _clients[clientFd]->getPwdSent()){
         deleteCarriageReturn(command);
 		int	num = command.find('#');
 		std::string channelName = command.substr(num);
@@ -447,6 +444,7 @@ void Server::processCommand(int clientFd, std::string command) {
         }
         sendConfirmJoin(clientFd, channelName);
 	}else if (std::strncmp(command.c_str(), "WHOIS ", 6) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth() && _clients[clientFd]->getIsOperator()){
+        std::cerr << "[DEBUG] WHOIS DETECTADO" << std::endl;
         std::string nickname = command.substr(6);
         if (nickname.empty()){
             response = "ERROR :No nickname especified\r\n";
@@ -466,7 +464,7 @@ void Server::processCommand(int clientFd, std::string command) {
         response = ":" SRV_NAME " " RPL_ENDOFWHOIS " " + _clients[clientFd]->getNickname() + " :End of WHOIS list\r\n";
         send(clientFd, response.c_str(), response.size(), 0);
 
-  }else {
+    }else {
         response = "ERROR :Unknown command ma G\r\n";
     }
     //for tests print client nickname, username and realname
