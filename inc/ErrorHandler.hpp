@@ -43,7 +43,6 @@ class ErrorHandler : public std::exception {
 		static ErrorHandler GetPeerName() {
 			return ErrorHandler("Unknown");
 		}
-
 };
 
 

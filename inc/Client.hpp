@@ -52,7 +52,8 @@ class Client {
 		bool getIsOperator(void) const;
 		bool getIsAuth(void) const;
 		bool getPwdSent(void) const;
-		std::string getHost(void);
+		std::string getHost(void) const;
+		std::vector<std::string> getJoinedChannels(void) const;
 		std::string getHash(void) const;
 		// Setters
 		void setSocket(int socket);

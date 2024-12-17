@@ -67,8 +67,20 @@ bool Client::getPwdSent(void) const{
 	return this->_pwdSent;
 }
 
+std::string Client::getHost(void) const{
+	struct sockaddr_in clientAddr;
+    socklen_t clientAddrLen = sizeof(clientAddr);
+    if (getpeername(_socket, (struct sockaddr *)&clientAddr, &clientAddrLen) == -1)
+		throw ErrorHandler::GetPeerName();
+	return inet_ntoa(clientAddr.sin_addr);
+}
+
 std::string Client::getHash(void) const{
 	return this->_nickname + ":" + this->_username + ":" + this->_realname;
+}
+
+std::vector<std::string> Client::getJoinedChannels(void) const{
+	return this->_joinedChannels;
 }
 
 std::string Client::getHost(void) {
@@ -114,9 +126,9 @@ void Client::setPwdSent(void){
 
 bool Client::alreadyJoined(const std::string &channelName) const
 {
-	for (size_t i; i < this->_joinedChannels.size(); i++)
+	for (size_t i; i < _joinedChannels.size(); i++)
 	{
-		if (this->_joinedChannels[i] == channelName)
+		if (std::strcmp(_joinedChannels[i].c_str(), channelName.c_str()) == 0)
 			return true;
 	}
 	return false;
@@ -124,6 +136,6 @@ bool Client::alreadyJoined(const std::string &channelName) const
 
 void	Client::joinChannel(Channel &channel)
 {
-	if (!this->alreadyJoined(channel.getName()))
-		this->_joinedChannels.push_back(channel.getName());
+	if (alreadyJoined(channel.getName()) == false)
+		_joinedChannels.push_back(channel.getName());
 }

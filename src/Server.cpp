@@ -272,6 +272,63 @@ int	Server::findUserByNick(const std::string &nick)
 	return (-1);
 }
 
+void	Server::sendChannelMessage(int clientFd, const std::string &msg, const std::string &channelName)
+{
+    std::string senderNick = _clients[clientFd]->getNickname();
+    std::string host = _clients[clientFd]->getHost();
+	for (size_t i = 0; i < this->_channels.size(); i++)
+		if (_channels[i].getName() == channelName)
+		{
+			std::cerr << "[DEBUG] CANALES: " << this->_channels[i].getName() << std::endl;	
+			this->_channels[i].sendMsg(senderNick, host, msg);
+		}
+}
+
+void Server::sendConfirmJoin(int clientFd, const std::string &channelName){
+    std::string response;
+    std::string allMembers;
+    //preparar un string con los nicks del canal separados por espacios
+    for (size_t i = 0; i < _channels.size(); i++){
+        if (_channels[i].getName() == channelName){
+            for (size_t j = 0; j < _channels[i].getMembers().size(); j++){
+                allMembers += _channels[i].getMembers()[j].getNickname() + " ";
+            }
+        }
+    }
+    //Topic
+    response = ":" SRV_NAME " " RPL_TOPIC " " + _clients[clientFd]->getNickname() + " " + channelName + " :No topic is set\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_NAMREPLY " " + _clients[clientFd]->getNickname() + " = " + channelName + " :" + allMembers + "\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_ENDOFNAMES " " + _clients[clientFd]->getNickname() + " " + channelName + " :End of /NAMES list\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    //Enviar la notificación a los demás miembros del canal de que un nuevo usuario se ha unido y al propio usuario
+    for (size_t i = 0; i < _channels.size(); i++){
+        if (_channels[i].getName() == channelName){
+            std::string notification = ":" + _clients[clientFd]->getNickname() + " JOIN " + channelName + "\r\n";
+            for (size_t j = 0; j < _channels[i].getMembers().size(); j++){
+                    std::cerr << "[DEBUG] Enviando notificación: " << notification << std::endl;
+                    send(_channels[i].getMembers()[j].getSocket(), notification.c_str(), notification.size(), 0);
+            }
+        }
+    }
+}
+
+Channel& Server::findOrCreateChannel(std::string channelName, int clientFd)
+{
+    //Comprobar si el canal ya existe
+	for (size_t i = 0; i < this->_channels.size(); i++){
+        std::cerr << "[DEBUG] Comparando canales: " << this->_channels[i].getName() << " con " << channelName << std::endl;
+		if (std::strncmp(this->_channels[i].getName().c_str(), channelName.c_str(), channelName.length()) == 0)
+		{
+            std::cerr << "[DEBUG] CANAL EXISTENTE: " << this->_channels[i].getName() << std::endl;
+			return this->_channels[i];//Si ya existe retornamos el canal
+		}
+    }
+	this->_channels.push_back(Channel(channelName));
+    return _channels[_channels.size() - 1];
+}
+
 void Server::processCommand(int clientFd, std::string command) {
     std::string response;
     if (std::strncmp(command.c_str(), "QUIT", 4) == 0){
@@ -341,17 +398,55 @@ void Server::processCommand(int clientFd, std::string command) {
         }
         handshake(clientFd);
         //return;
-    }else if (std::strncmp(command.c_str(), "PRIVMSG ", 8) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){
-        std::cout << "[LOG] COMMAND: PRIVMSG DETECTADO" << std::endl;
-		int	end = command.find(':');
-		std::string msg = command.substr(end + 1);
-		deleteCarriageReturn(msg);
-		int	espacio = command.find(':') - 1;
-		std::string receiver = command.substr(8, espacio - 8);
-        std::cerr << "[DEBUG] Receiver: " << receiver << std::endl;
-		int			receiverFd = findUserByNick(receiver);
-		this->sendPrivateMessage(_clients[clientFd]->getNickname(), msg, receiver);
-	} else if (std::strncmp(command.c_str(), "WHOIS ", 6) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth() && _clients[clientFd]->getIsOperator()){
+    }
+	else if (std::strncmp(command.c_str(), "PRIVMSG ", 8) == 0 && _clients[clientFd]->getPwdSent()) {
+		int num = command.find('#');
+		if (num != std::string::npos) //channel
+		{
+			std::cerr << "[DEBUG] MENSAJE BRUTO DE CLIENTE: " << command << std::endl;
+			int	end = command.find(':');
+			std::string msg = command.substr(end + 1);
+			deleteCarriageReturn(msg);
+			std::cerr << "[DEBUG] MENSAJE DE CLIENTE: " << msg << std::endl;
+			int	espacio = command.find(':');
+			std::string channelName = command.substr(8, espacio - 9);
+			std::cerr << "[DEBUG] NOMBRE DEL CANAL: " << channelName << std::endl;
+			this->sendChannelMessage(clientFd, msg, channelName);
+		}
+		else // private message
+		{
+			int	end = command.find(':');
+			std::string msg = command.substr(end + 1);
+			deleteCarriageReturn(msg);
+			int	espacio = command.find(':');
+			std::string receiver = command.substr(8, espacio - 9);
+			int			receiverFd = findUserByNick(receiver);
+			this->sendPrivateMessage(_clients[clientFd]->getNickname(), msg, receiver);
+		}
+	}
+	else if (std::strncmp(command.c_str(), "JOIN ", 5) == 0 && _clients[clientFd]->getPwdSent())
+	{
+        deleteCarriageReturn(command);
+		int	num = command.find('#');
+		std::string channelName = command.substr(num);
+        // comprobar si ya nos hemos unido a este canal
+        for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
+            if (_clients[clientFd]->getJoinedChannels()[i] == channelName){
+                std::cerr << "[DEBUG] Ya nos hemos unido a este canal" << std::endl;
+                return;
+            }
+        }
+		joinChannelServerSide(findOrCreateChannel(channelName, clientFd), clientFd);
+        std::cerr << "[DEBUG] Canales creados: " << _channels.size() << std::endl;
+        for (size_t i = 0; i < _channels.size(); i++){
+            std::cerr << "[DEBUG] Nombre del canal: " << _channels[i].getName() << std::endl;
+        }
+        std::cerr << "[DEBUG] Este usuario está en los siguientes canales: " << std::endl;
+        for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
+            std::cerr << "[DEBUG] " << _clients[clientFd]->getJoinedChannels()[i] << std::endl;
+        }
+        sendConfirmJoin(clientFd, channelName);
+	}else if (std::strncmp(command.c_str(), "WHOIS ", 6) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth() && _clients[clientFd]->getIsOperator()){
         std::string nickname = command.substr(6);
         if (nickname.empty()){
             response = "ERROR :No nickname especified\r\n";
@@ -371,7 +466,7 @@ void Server::processCommand(int clientFd, std::string command) {
         response = ":" SRV_NAME " " RPL_ENDOFWHOIS " " + _clients[clientFd]->getNickname() + " :End of WHOIS list\r\n";
         send(clientFd, response.c_str(), response.size(), 0);
 
-    } else {
+  }else {
         response = "ERROR :Unknown command ma G\r\n";
     }
     //for tests print client nickname, username and realname
