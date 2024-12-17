@@ -302,15 +302,13 @@ void Server::sendConfirmJoin(int clientFd, const std::string &channelName){
     send(clientFd, response.c_str(), response.size(), 0);
     response = ":" SRV_NAME " " RPL_ENDOFNAMES " " + _clients[clientFd]->getNickname() + " " + channelName + " :End of /NAMES list\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
-    //Enviar la notificación a los demás miembros del canal de que un nuevo usuario se ha unido
+    //Enviar la notificación a los demás miembros del canal de que un nuevo usuario se ha unido y al propio usuario
     for (size_t i = 0; i < _channels.size(); i++){
         if (_channels[i].getName() == channelName){
             std::string notification = ":" + _clients[clientFd]->getNickname() + " JOIN " + channelName + "\r\n";
             for (size_t j = 0; j < _channels[i].getMembers().size(); j++){
-                if (_channels[i].getMembers()[j].getSocket() != clientFd){
                     std::cerr << "[DEBUG] Enviando notificación: " << notification << std::endl;
                     send(_channels[i].getMembers()[j].getSocket(), notification.c_str(), notification.size(), 0);
-                }
             }
         }
     }
