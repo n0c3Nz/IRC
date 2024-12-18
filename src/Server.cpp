@@ -403,13 +403,6 @@ void Server::sendConfirmJoin(int clientFd, const std::string &channelName){
         }
     }
 
-    //Topic
-    response = ":" SRV_NAME " " RPL_TOPIC " " + _clients[clientFd]->getNickname() + " " + channelName + " :No topic is set\r\n";
-    send(clientFd, response.c_str(), response.size(), 0);
-    response = ":" SRV_NAME " " RPL_NAMREPLY " " + _clients[clientFd]->getNickname() + " = " + channelName + " :" + allMembers + "\r\n";
-    send(clientFd, response.c_str(), response.size(), 0);
-    response = ":" SRV_NAME " " RPL_ENDOFNAMES " " + _clients[clientFd]->getNickname() + " " + channelName + " :End of /NAMES list\r\n";
-    send(clientFd, response.c_str(), response.size(), 0);
     //Enviar la notificación a los demás miembros del canal de que un nuevo usuario se ha unido y al propio usuario
     for (size_t i = 0; i < _channels.size(); i++){
         if (_channels[i].getName() == channelName){
@@ -420,22 +413,14 @@ void Server::sendConfirmJoin(int clientFd, const std::string &channelName){
             }
         }
     }
+    //Topic
+    response = ":" SRV_NAME " " RPL_TOPIC " " + _clients[clientFd]->getNickname() + " " + channelName + " :No topic is set\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_NAMREPLY " " + _clients[clientFd]->getNickname() + " = " + channelName + " :" + allMembers + "\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
+    response = ":" SRV_NAME " " RPL_ENDOFNAMES " " + _clients[clientFd]->getNickname() + " " + channelName + " :End of /NAMES list\r\n";
+    send(clientFd, response.c_str(), response.size(), 0);
 }
-
-// Channel& Server::findOrCreateChannel(std::string channelName, int clientFd)
-// {
-//     //Comprobar si el canal ya existe
-// 	for (size_t i = 0; i < this->_channels.size(); i++){
-//         std::cerr << "[DEBUG] Comparando canales: " << this->_channels[i].getName() << " con " << channelName << std::endl;
-// 		if (std::strncmp(this->_channels[i].getName().c_str(), channelName.c_str(), channelName.length()) == 0)
-// 		{
-//             std::cerr << "[DEBUG] CANAL EXISTENTE: " << this->_channels[i].getName() << std::endl;
-// 			return this->_channels[i];//Si ya existe retornamos el canal
-// 		}
-//     }
-// 	this->_channels.push_back(Channel(channelName));
-//     return _channels[_channels.size() - 1];
-// }
 
 int	Server::exist(const std::string &channelName) const
 {
