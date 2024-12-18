@@ -1,10 +1,7 @@
 #ifndef DEBUG_HPP
 #define DEBUG_HPP
 
-#include <iostream>
-#include <string>
-
-#define DBGLVL 1
+#include "Includes.hpp"
 
 template <typename T>
 class Debug {

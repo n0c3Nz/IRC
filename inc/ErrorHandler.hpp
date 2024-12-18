@@ -1,11 +1,7 @@
 #ifndef ERRORHANDLER_HPP
 #define ERRORHANDLER_HPP
 
-#include <exception>
-#include <string>
-
-#include <exception>
-#include <string>
+#include "Includes.hpp"
 
 class ErrorHandler : public std::exception {
 	private:

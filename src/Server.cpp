@@ -402,7 +402,6 @@ void Server::sendConfirmJoin(int clientFd, const std::string &channelName){
             }
         }
     }
-    std::ostringstream responseStream;
 
     //Topic
     response = ":" SRV_NAME " " RPL_TOPIC " " + _clients[clientFd]->getNickname() + " " + channelName + " :No topic is set\r\n";

@@ -1,63 +1,7 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <map>
-#include <list>
-#include <vector>
-#include <algorithm>
-#include <iterator>
-#include <sstream>
-#include <fstream>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/select.h>
-#include <sys/time.h>
-#include <sys/ioctl.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <errno.h>
-#include <cstring>
-#include <poll.h>
-#include <sys/epoll.h>
-#include <memory>
-
-#include <ErrorHandler.hpp>
-#include <Client.hpp>
-#include <Channel.hpp>
-
-#define MAX_EVENTS 10
-#define MAX_MSG_SIZE 4096
-
-#define SRV_NAME "AnonChatServer"
-#define SRV_VERSION "0.1"
-#define RPL_WELCOME "001"
-#define RPL_YOURHOST "002"
-#define RPL_CREATED "003"
-#define RPL_MYINFO "004"
-
-#define RPL_MOTDSTART "375"
-#define RPL_MOTD "372"
-#define RPL_ENDOFMOTD "376"
-#define RPL_WHOISUSER "311"
-#define RPL_ENDOFWHOIS "318"
-
-#define RPL_TOPIC "332"
-#define RPL_NAMREPLY "353"
-#define RPL_ENDOFNAMES "366"
-
-#define ERR_BADCHANNELKEY "475"
-#define ERR_NOTONCHANNEL "442"
-#define ERR_NOSUCHCHANNEL "403"
-
-#define RPL_CHANNELMODEIS "324"
-#define RPL_CREATIONTIME "329"
+#include "Includes.hpp"
 
 class Server {
 	private:
