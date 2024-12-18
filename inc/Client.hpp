@@ -64,6 +64,7 @@ class Client {
 		void setIsAuth(void);
 		void setPwdSent(void);
 		void	joinChannel(Channel &channel);
+		void	leaveChannel(const std::string &channelName);
 		bool	alreadyJoined(const std::string &channelName) const;
 };
 

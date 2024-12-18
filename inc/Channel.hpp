@@ -36,7 +36,7 @@ class Channel {
 		std::string						_password;
 		bool							_isPrivate;
 		bool							_Pwd;
-		char							_mode;
+		std::string						_mode;
 	public:
 		Channel();
 		Channel(std::string name);
@@ -47,7 +47,10 @@ class Channel {
 		std::vector<Client>	getMembers() const;
 		bool			getIfPwd() const;
 		std::string		getPwd() const;
+		void			addOperator(const std::string &nick);
+		void			removeOperator(const std::string &nick);
 		void			addClient(Client &client);
+		int 			isOperator(const std::string &nick);
 		void			removeClient(Client &client);
 		void			sendMsg(const std::string &senderNick, const std::string &host,const std::string &msg);
 		int 			findUserFd(const std::string &senderNick) const;

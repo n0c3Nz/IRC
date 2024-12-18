@@ -131,3 +131,15 @@ void	Client::joinChannel(Channel &channel)
 	if (alreadyJoined(channel.getName()) == false)
 		_joinedChannels.push_back(channel.getName());
 }
+
+void Client::leaveChannel(const std::string &channelName)
+{
+	for (size_t i = 0; i < _joinedChannels.size(); i++)
+	{
+		if (std::strcmp(_joinedChannels[i].c_str(), channelName.c_str()) == 0)
+		{
+			_joinedChannels.erase(_joinedChannels.begin() + i);
+			return;
+		}
+	}
+}

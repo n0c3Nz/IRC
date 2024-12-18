@@ -3,11 +3,13 @@
 Channel::Channel() {
 	this->_name = "Default";
 	this->_isPrivate = false;
+	_mode = "nt";
 }
 
 Channel::Channel(std::string name) {
 	this->_name = name;
 	this->_isPrivate = false;
+	_mode = "nt";
 }
 
 Channel::Channel(const Channel &copy) {
@@ -35,6 +37,29 @@ std::vector<Client>	Channel::getMembers() const
 	return this->_members;
 }
 
+void	Channel::addOperator(const std::string &nick)
+{
+	//comprobar si ya es operador
+	for (size_t i = 0; i < this->_operators.size(); i++)
+	{
+		if (this->_operators[i] == nick)
+			return;
+	}
+	this->_operators.push_back(nick);
+}
+
+void	Channel::removeOperator(const std::string &nick)
+{
+	for (size_t i = 0; i < this->_operators.size(); i++)
+	{
+		if (this->_operators[i] == nick)
+		{
+			this->_operators.erase(this->_operators.begin() + i);
+			return;
+		}
+	}
+}
+
 bool	Channel::alreadyIn(const std::string &nickName)
 {
 	for (size_t i = 0; i < this->_members.size(); i++)
@@ -45,9 +70,22 @@ bool	Channel::alreadyIn(const std::string &nickName)
 
 void		Channel::addClient(Client &client)
 {
- 	if (alreadyIn(client.getNickname()) == false)
+ 	//Si no hay nadie en el canal, el primer cliente que se une es operador
+	if (this->_members.size() == 0)
+ 		this->_operators.push_back(client.getNickname());
+	if (alreadyIn(client.getNickname()) == false)
  		_members.push_back(client);
  	std::cerr << "[DEBUG] Cliente añadido: " << client.getNickname() << " al canal: " << this->_name << std::endl;
+}
+
+int Channel::isOperator(const std::string &nick)
+{
+	for (size_t i = 0; i < this->_operators.size(); i++)
+	{
+		if (this->_operators[i] == nick)
+			return 1;
+	}
+	return 0;
 }
 
 void Channel::removeClient(Client &client)
