@@ -3,6 +3,9 @@
 
 #include "Includes.hpp"
 
+
+class Client;
+class Channel;
 class Server {
 	private:
 		int 							_port;
