@@ -133,3 +133,13 @@ void		Channel::sendMsg(const std::string &senderNick, const std::string &host, c
 		}
 	}
 }
+
+bool	Channel::getIfPwd() const
+{
+	return this->_Pwd;
+}
+
+std::string Channel::getPwd() const
+{
+	return this->_password;
+}

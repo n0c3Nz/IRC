@@ -294,10 +294,63 @@ int Server::checkHash(int clientFd){
     return 0;
 }
 
-void	Server::joinChannelServerSide(Channel &channel, int clientFd)
+	
+int		Server::authenticateChannel(const Channel &channel, const std::string &password) const
 {
-	channel.addClient(*_clients[clientFd]);
-	_clients[clientFd]->joinChannel(channel);
+	if (channel.getPwd() == password)
+		return 0;
+	return 1;
+}
+
+void	Server::joinChannelServerSide(std::map<std::string, std::string> channelKey, int clientFd)
+{
+
+	// channel.addClient(*_clients[clientFd]);
+	// _clients[clientFd]->joinChannel(channel);
+	for (std::map<std::string, std::string>::iterator it = channelKey.begin(); it != channelKey.end(); ++it)
+	{
+		std::string channelName = it->first;
+		std::string provideKey = it->second;
+		
+		Channel *channel = nullptr;
+		if (exist(channelName) == 1) //no existe el canal
+		{
+			_channels.push_back(Channel(channelName));
+			channel = &_channels.back();
+			channel->addClient(*_clients[clientFd]);
+			_clients[clientFd]->joinChannel(*channel);
+			std::cerr << "[DEBUG] CANNAL NO EXISTENTE: "<< channelName << std::endl;
+			sendConfirmJoin(clientFd, channelName);
+		}
+		else//existe
+		{
+			for (size_t i = 0; i < _channels.size(); i++) {
+            	if (_channels[i].getName() == channelName) {
+                	channel = &_channels[i];
+                	break;
+           		}
+        	}
+			if (exist(channelName) == 3)
+			{
+				if (authenticateChannel(*channel, channelName) == 0)
+					{
+						channel->addClient(*_clients[clientFd]);
+						_clients[clientFd]->joinChannel(*channel);
+					}
+				else
+				{
+					//enviar codigo de error de autenticacion de credenciales
+					std::string errorMsg = ":" SRV_NAME " " ERR_BADCHANNELKEY " " + _clients[clientFd]->getNickname() + " " + channelName + " :Cannot join channel (+k) - bad key\r\n";
+				}
+			}
+			if (exist(channelName) == 2)
+			{
+				channel->addClient(*_clients[clientFd]);
+				_clients[clientFd]->joinChannel(*channel);
+			}
+			sendConfirmJoin(clientFd, channelName);
+		}
+	}
 }
 
 void	Server::sendPrivateMessage(std::string senderNick, std::string msg, std::string receiverNick)
@@ -370,19 +423,73 @@ void Server::sendConfirmJoin(int clientFd, const std::string &channelName){
     }
 }
 
-Channel& Server::findOrCreateChannel(std::string channelName, int clientFd)
+// Channel& Server::findOrCreateChannel(std::string channelName, int clientFd)
+// {
+//     //Comprobar si el canal ya existe
+// 	for (size_t i = 0; i < this->_channels.size(); i++){
+//         std::cerr << "[DEBUG] Comparando canales: " << this->_channels[i].getName() << " con " << channelName << std::endl;
+// 		if (std::strncmp(this->_channels[i].getName().c_str(), channelName.c_str(), channelName.length()) == 0)
+// 		{
+//             std::cerr << "[DEBUG] CANAL EXISTENTE: " << this->_channels[i].getName() << std::endl;
+// 			return this->_channels[i];//Si ya existe retornamos el canal
+// 		}
+//     }
+// 	this->_channels.push_back(Channel(channelName));
+//     return _channels[_channels.size() - 1];
+// }
+
+int	Server::exist(const std::string &channelName) const
 {
-    //Comprobar si el canal ya existe
 	for (size_t i = 0; i < this->_channels.size(); i++){
-        std::cerr << "[DEBUG] Comparando canales: " << this->_channels[i].getName() << " con " << channelName << std::endl;
 		if (std::strncmp(this->_channels[i].getName().c_str(), channelName.c_str(), channelName.length()) == 0)
 		{
-            std::cerr << "[DEBUG] CANAL EXISTENTE: " << this->_channels[i].getName() << std::endl;
-			return this->_channels[i];//Si ya existe retornamos el canal
+            if (this->_channels[i].getIfPwd() == true)
+				return 3;
+			else
+				return 2;
 		}
     }
-	this->_channels.push_back(Channel(channelName));
-    return _channels[_channels.size() - 1];
+	return 1;
+}
+
+std::map<std::string, std::string>		Server::parseJoinRequets(std::string request) const
+{
+	std::map<std::string, std::string> channelKeys;
+	std::vector<std::string> channels;
+	std::vector<std::string> keys;
+	size_t	spacePos = request.find(' ');
+	
+	std::string channelsPart = request.substr(0, spacePos);
+	std::string keysPart = (spacePos != std::string::npos) ? request.substr(spacePos + 1) : "";
+
+	std::istringstream channelStream(channelsPart);
+	std::string channel;
+	while (std::getline(channelStream, channel, ','))
+		channels.push_back(channel);
+
+	if (!keysPart.empty())
+	{
+		std::istringstream keyStream(keysPart);
+		std::string key;
+		while (std::getline(keyStream, key, ','))
+			keys.push_back(key);
+	}
+
+	for (size_t i = 0; i < channels.size(); i++)
+	{
+		if (i < keys.size())
+		{
+			if (exist(channels[i]) == 3)
+				channelKeys[channels[i]] = keys[i];
+			else if (exist(channels[i]) == 2)
+				channelKeys[channels[i]] = "";
+			else if (exist(channels[i]) == 1)
+				channelKeys[channels[i]] = "";
+		}
+		else
+			channelKeys[channels[i]] = "";
+	}
+	return channelKeys;
 }
 
 int Server::checkChannelExistence(int clientFd, const std::string &channelName){
@@ -407,6 +514,7 @@ int Server::checkChannelMembership(int clientFd, const std::string &channelName)
     send(clientFd, response.c_str(), response.size(), 0);
     return 1;
 }
+
 
 void Server::processCommand(int clientFd, std::string command) {
     std::string response;
@@ -510,22 +618,25 @@ void Server::processCommand(int clientFd, std::string command) {
 		int	num = command.find('#');
 		std::string channelName = command.substr(num);
         // comprobar si ya nos hemos unido a este canal
-        for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
-            if (_clients[clientFd]->getJoinedChannels()[i] == channelName){
-                std::cerr << "[DEBUG] Ya nos hemos unido a este canal" << std::endl;
-                return;
-            }
-        }
-		joinChannelServerSide(findOrCreateChannel(channelName, clientFd), clientFd);
-        std::cerr << "[DEBUG] Canales creados: " << _channels.size() << std::endl;
-        for (size_t i = 0; i < _channels.size(); i++){
-            std::cerr << "[DEBUG] Nombre del canal: " << _channels[i].getName() << std::endl;
-        }
-        std::cerr << "[DEBUG] Este usuario está en los siguientes canales: " << std::endl;
-        for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
-            std::cerr << "[DEBUG] " << _clients[clientFd]->getJoinedChannels()[i] << std::endl;
-        }
-        sendConfirmJoin(clientFd, channelName);
+		for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
+			if (_clients[clientFd]->getJoinedChannels()[i] == channelName){
+				std::cerr << "[DEBUG] Ya nos hemos unido a este canal" << std::endl;
+				return;
+			}
+		}
+		std::map<std::string, std::string> aux = this->parseJoinRequets(channelName);
+		for (std::map<std::string, std::string>::iterator it = aux.begin(); it != aux.end(); ++it)
+			std::cerr << "[DEBUG] CHANNEL: "<< it->first << " KEY: "<< it->second << std::endl;
+		joinChannelServerSide(aux, clientFd);
+		std::cerr << "[DEBUG] Canales creados: " << _channels.size() << std::endl;
+		for (size_t i = 0; i < _channels.size(); i++){
+			std::cerr << "[DEBUG] Nombre del canal: " << _channels[i].getName() << std::endl;
+		}
+		std::cerr << "[DEBUG] Este usuario está en los siguientes canales: " << std::endl;
+		for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
+			std::cerr << "[DEBUG] " << _clients[clientFd]->getJoinedChannels()[i] << std::endl;
+		}
+		//sendConfirmJoin(clientFd, channelName);
     }else if (std::strncmp(command.c_str(), "MODE ", 5) == 0 && _clients[clientFd]->getPwdSent()){
         std::cerr << "[DEBUG] MODE DETECTADO" << std::endl;
         std::string mode = command.substr(5);
@@ -579,6 +690,7 @@ void Server::processCommand(int clientFd, std::string command) {
         names(clientFd, channelName);
 
     }else if (std::strncmp(command.c_str(), "WHOIS ", 6) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth() && _clients[clientFd]->getIsOperator()){
+
         std::cerr << "[DEBUG] WHOIS DETECTADO" << std::endl;
         std::string nickname = command.substr(6);
         if (nickname.empty()){
