@@ -62,6 +62,8 @@ class Server {
 		std::map<std::string, std::string>		parseJoinRequets(std::string request) const;
 		int		exist(const std::string &channelName) const;
 		int		authenticateChannel(const Channel &channel, const std::string &password) const;
+		void	flagParser(const std::string &channel, const std::string &flag, int clientFd);
+		std::vector<std::string> getChannelOperators(const std::string &channelName) const;
 };
 
 void setNonBlocking(int socketFd);

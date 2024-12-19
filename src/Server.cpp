@@ -499,6 +499,50 @@ int Server::checkChannelMembership(int clientFd, const std::string &channelName)
     return 1;
 }
 
+static	std::string findModeFlag(std::string command)
+{
+	size_t flagPos = command.find_first_of("+-");
+	if (flagPos != std::string::npos)
+		{
+			if (command[flagPos + 1] == 'k' || command[flagPos + 1] == 'i' || command[flagPos + 1] == 't' || command[flagPos + 1] == 'o')
+				return command.substr(flagPos, 2);
+		}
+		return ("");
+}
+
+std::vector<std::string>	Server::getChannelOperators(const std::string &channelName) const 
+{
+	for (size_t i = 0; i < this->_channels.size(); i++)
+		if (this->_channels[i].getName() == channelName)
+			return this->_channels[i].getOperators();
+	return {}; 
+}
+
+static	int isChannelOperator(const std::string &nick, std::vector<std::string> operators)
+{
+	for (size_t i = 0; i < operators.size(); i++)
+		if (operators[i] == nick)
+			return 0;
+	return 1;
+}
+
+void	Server::flagParser(const std::string &channel, const std::string &flag, int clientFd)
+{
+	if (exist(channel) == 1)
+	{
+		std::string response = ":" SRV_NAME " " ERR_NOSUCHCHANNEL " " + _clients[clientFd]->getNickname() + " " + channelName + " :No such channel\r\n";
+    	send(clientFd, response.c_str(), response.size(), 0);
+	}
+	else if (isChannelOperator(this->_clients[clientFd]->getNickname(), getChannelOperators(channel)) == 1)
+	{
+		std::string response = ":" SRV_NAME " " ERR_CHANOPRIVSNEEDED " " + _clients[clientFd]->getNickname() + " " + channelName + " :No such channel\r\n";
+    	send(clientFd, response.c_str(), response.size(), 0);
+	}
+	else
+	{
+		
+	}
+}
 
 void Server::processCommand(int clientFd, std::string command) {
     std::string response;
@@ -624,6 +668,13 @@ void Server::processCommand(int clientFd, std::string command) {
     }else if (std::strncmp(command.c_str(), "MODE ", 5) == 0 && _clients[clientFd]->getPwdSent()){
         std::cerr << "[DEBUG] MODE DETECTADO" << std::endl;
         std::string mode = command.substr(5);
+		size_t	channelPos = command.find('#');
+		if (channelPos != std::string::npos)
+		{
+			size_t	endPos = command.find(' ', channelPos);
+			std::string channelName = command.substr(channelPos, endPos - channelPos);
+			deleteCarriageReturn(channelName);
+		}
         deleteCarriageReturn(mode);
         if (mode.empty()){
             response = "ERROR :No mode specified\r\n";
@@ -634,11 +685,17 @@ void Server::processCommand(int clientFd, std::string command) {
         std::string modeStr = mode.substr(mode.find(' ') + 1);
         if (checkChannelExistence(clientFd, channelName) || checkChannelMembership(clientFd, channelName))
             return;
-        response = ":" SRV_NAME " " RPL_CHANNELMODEIS " " + _clients[clientFd]->getNickname() + " " + channelName + " +" + modeStr + "\r\n";
-        send(clientFd, response.c_str(), response.size(), 0);
-        //enviar RPL_CREATIONTIME
-        response = ":" SRV_NAME " " RPL_CREATIONTIME " " + _clients[clientFd]->getNickname() + " " + channelName + " " + std::to_string(time(NULL)) + "\r\n";
-        send(clientFd, response.c_str(), response.size(), 0);
+		std::string flag = findModeFlag(command);
+        if (!flag.empty() && !channelName.empty())
+		{
+			flagParser(channelName, flag, clientFd);
+		}
+		//
+		// response = ":" SRV_NAME " " RPL_CHANNELMODEIS " " + _clients[clientFd]->getNickname() + " " + channelName + " +" + modeStr + "\r\n";
+        // send(clientFd, response.c_str(), response.size(), 0);
+        // //enviar RPL_CREATIONTIME
+        // response = ":" SRV_NAME " " RPL_CREATIONTIME " " + _clients[clientFd]->getNickname() + " " + channelName + " " + std::to_string(time(NULL)) + "\r\n";
+        // send(clientFd, response.c_str(), response.size(), 0);
     }else if (std::strncmp(command.c_str(), "PART ", 5) == 0 && _clients[clientFd]->getPwdSent()){//PART #channel
         //encontrar ':' para determinar cuando termina el nombre del canal y cuando empieza el mensaje
         int pos = command.find(':');

@@ -25,6 +25,9 @@ class Channel {
 		std::vector<Client>	getMembers() const;
 		bool			getIfPwd() const;
 		std::string		getPwd() const;
+		std::string		getMode() const;
+		std::vector<std::string> getOperators() const;
+		void			setMode();
 		void			addOperator(const std::string &nick);
 		void			removeOperator(const std::string &nick);
 		void			addClient(Client &client);
