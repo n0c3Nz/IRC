@@ -1,7 +1,7 @@
 #!/bin/bash
 
 {
-  echo "PASS 12345"
+  echo "PASS 1234"
   echo "NICK paco"
   echo "USER paquito 0 * :pelotudo"
   cat  # Mantiene la entrada abierta para interactuar con el proceso

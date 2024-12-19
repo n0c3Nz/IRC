@@ -52,6 +52,7 @@ class Server {
 		void motd(int clientFd);
 		void joinChannelServerSide(std::map<std::string, std::string> channelKey, int clientFd);
 		void names(int clientFd, std::string channelName);
+		//Auxiliar
 		int checkChannelExistence(int clientFd, const std::string &channelName);
 		int checkChannelMembership(int clientFd, const std::string &channelName);
 		void sendPrivateMessage(std::string senderNick, std::string msg, std::string receiverNick);
@@ -62,6 +63,8 @@ class Server {
 		std::map<std::string, std::string>		parseJoinRequets(std::string request) const;
 		int		exist(const std::string &channelName) const;
 		int		authenticateChannel(const Channel &channel, const std::string &password) const;
+		//esto es nuevo de la rama de c3nz :D
+		std::string	getChannelMode(const std::string &channelName) const;
 };
 
 void setNonBlocking(int socketFd);

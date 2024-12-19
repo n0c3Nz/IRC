@@ -3,17 +3,26 @@
 Channel::Channel() {
 	this->_name = "Default";
 	this->_isPrivate = false;
-	_mode = "nt";
+	this->_topic = "No topic is set";
+	this->_mode = "t";
 }
 
 Channel::Channel(std::string name) {
 	this->_name = name;
 	this->_isPrivate = false;
-	_mode = "nt";
+	this->_topic = "No topic is set";
+	this->_mode = "t";
 }
 
 Channel::Channel(const Channel &copy) {
-	*this = copy;
+	this->_name = copy._name;
+	this->_topic = copy._topic;
+	this->_members = copy._members;
+	this->_operators = copy._operators;
+	this->_password = copy._password;
+	this->_isPrivate = copy._isPrivate;
+	this->_Pwd = copy._Pwd;
+	this->_mode = copy._mode;
 }
 
 Channel &Channel::operator=(const Channel &copy) {
@@ -35,6 +44,16 @@ std::string		Channel::getName() const
 std::vector<Client>	Channel::getMembers() const
 {
 	return this->_members;
+}
+
+std::string	Channel::getMode() const
+{
+	return this->_mode;
+}
+
+std::string Channel::getTopic() const
+{
+	return this->_topic;
 }
 
 void	Channel::addOperator(const std::string &nick)

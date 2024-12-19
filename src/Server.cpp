@@ -294,6 +294,7 @@ int Server::checkHash(int clientFd){
     return 0;
 }
 
+
 	
 int		Server::authenticateChannel(const Channel &channel, const std::string &password) const
 {
@@ -362,8 +363,13 @@ void	Server::sendPrivateMessage(std::string senderNick, std::string msg, std::st
 	int	receiverFd = findUserByNick(receiverNick);
 	std::cerr << "[DEBUG] SENDER FD: " << senderFd << "RECEIVER FD: " << receiverFd << std::endl;
 	std::string fullMsg = ':' + senderNick + " PRIVMSG " + receiverNick + " :" + msg + "\r\n";
-	if (senderFd != receiverFd  && receiverFd != -1)
+	if (senderFd != receiverFd  && receiverFd != -1){
 	 	send(receiverFd, fullMsg.c_str(), fullMsg.size(), 0);
+        return;
+    } else {
+        std::string response = ":" SRV_NAME " " ERR_NOSUCHNICK " " + senderNick + " " + receiverNick + " :No such nick/channel\r\n";
+        send(senderFd, response.c_str(), response.size(), 0);
+    }
 }
 
 int	Server::findUserByNick(const std::string &nick)
@@ -499,9 +505,18 @@ int Server::checkChannelMembership(int clientFd, const std::string &channelName)
     return 1;
 }
 
+std::string Server::getChannelMode(const std::string &channelName) const{
+    for (size_t i = 0; i < _channels.size(); i++){
+        if (_channels[i].getName() == channelName){
+            return _channels[i].getMode();
+        }
+    }
+    return "t";
+}
 
 void Server::processCommand(int clientFd, std::string command) {
     std::string response;
+    deleteCarriageReturn(command);
     if (std::strncmp(command.c_str(), "QUIT", 4) == 0){
         std::string msg = command.substr(5, command.length() - 6);
         if (msg.empty()){
@@ -518,8 +533,8 @@ void Server::processCommand(int clientFd, std::string command) {
         return;
     }else if (std::strncmp(command.c_str(), "PASS ", 5) == 0){
         std::cout << "[LOG] COMMAND: PASS DETECTADO" << std::endl;
-        //Obtenemos la password sin el ultimo caracter que es '\n'
-        std::string password = command.substr(5, command.length() - 6);
+        //Obtenemos la contraseña
+        std::string password = command.substr(5, command.length() - 4);// PASS 1234
         if (password.empty()){
             std::cerr << "ERROR :Password entregada vacía\r\n" << std::endl;
             response = "ERROR :Password vacío\r\n";
@@ -544,7 +559,6 @@ void Server::processCommand(int clientFd, std::string command) {
             send(clientFd, response.c_str(), response.size(), 0);
             return;
         }
-        deleteCarriageReturn(nickname);
         nick(clientFd, nickname);
         //return;
     }else if (std::strncmp(command.c_str(), "USER ", 5) == 0 && _clients[clientFd]->getPwdSent()){
@@ -559,8 +573,6 @@ void Server::processCommand(int clientFd, std::string command) {
             send(clientFd, response.c_str(), response.size(), 0);
             return;
         }
-        deleteCarriageReturn(realname);
-        deleteCarriageReturn(username);
         user(clientFd, username, realname);
         if (checkHash(clientFd))
             return;
@@ -573,14 +585,13 @@ void Server::processCommand(int clientFd, std::string command) {
         }
         handshake(clientFd);
         //return;
-    }else if (std::strncmp(command.c_str(), "PRIVMSG ", 8) == 0 && _clients[clientFd]->getPwdSent()) {
+    }else if (std::strncmp(command.c_str(), "PRIVMSG ", 8) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){
 		int num = command.find('#');
 		if (num != std::string::npos) //channel
 		{
 			std::cerr << "[DEBUG] MENSAJE BRUTO DE CLIENTE: " << command << std::endl;
 			int	end = command.find(':');
 			std::string msg = command.substr(end + 1);
-			deleteCarriageReturn(msg);
 			std::cerr << "[DEBUG] MENSAJE DE CLIENTE: " << msg << std::endl;
 			int	espacio = command.find(':');
 			std::string channelName = command.substr(8, espacio - 9);
@@ -591,14 +602,12 @@ void Server::processCommand(int clientFd, std::string command) {
 		{
 			int	end = command.find(':');
 			std::string msg = command.substr(end + 1);
-			deleteCarriageReturn(msg);
 			int	espacio = command.find(':');
 			std::string receiver = command.substr(8, espacio - 9);
 			int			receiverFd = findUserByNick(receiver);
 			this->sendPrivateMessage(_clients[clientFd]->getNickname(), msg, receiver);
 		}
-	}else if (std::strncmp(command.c_str(), "JOIN ", 5) == 0 && _clients[clientFd]->getPwdSent()){
-        deleteCarriageReturn(command);
+	}else if (std::strncmp(command.c_str(), "JOIN ", 5) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){
 		int	num = command.find('#');
 		std::string channelName = command.substr(num);
         // comprobar si ya nos hemos unido a este canal
@@ -621,17 +630,16 @@ void Server::processCommand(int clientFd, std::string command) {
 			std::cerr << "[DEBUG] " << _clients[clientFd]->getJoinedChannels()[i] << std::endl;
 		}
 		//sendConfirmJoin(clientFd, channelName);
-    }else if (std::strncmp(command.c_str(), "MODE ", 5) == 0 && _clients[clientFd]->getPwdSent()){
+    }else if (std::strncmp(command.c_str(), "MODE ", 5) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){
         std::cerr << "[DEBUG] MODE DETECTADO" << std::endl;
-        std::string mode = command.substr(5);
-        deleteCarriageReturn(mode);
-        if (mode.empty()){
+        std::string channel = command.substr(5);
+        if (channel.empty()){
             response = "ERROR :No mode specified\r\n";
             send(clientFd, response.c_str(), response.size(), 0);
             return;
         }
-        std::string channelName = mode.substr(0, mode.find(' '));
-        std::string modeStr = mode.substr(mode.find(' ') + 1);
+        std::string channelName = channel.substr(0, channel.find(' '));
+        std::string modeStr = getChannelMode(channelName);
         if (checkChannelExistence(clientFd, channelName) || checkChannelMembership(clientFd, channelName))
             return;
         response = ":" SRV_NAME " " RPL_CHANNELMODEIS " " + _clients[clientFd]->getNickname() + " " + channelName + " +" + modeStr + "\r\n";
@@ -639,7 +647,7 @@ void Server::processCommand(int clientFd, std::string command) {
         //enviar RPL_CREATIONTIME
         response = ":" SRV_NAME " " RPL_CREATIONTIME " " + _clients[clientFd]->getNickname() + " " + channelName + " " + std::to_string(time(NULL)) + "\r\n";
         send(clientFd, response.c_str(), response.size(), 0);
-    }else if (std::strncmp(command.c_str(), "PART ", 5) == 0 && _clients[clientFd]->getPwdSent()){//PART #channel
+    }else if (std::strncmp(command.c_str(), "PART ", 5) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){//PART #channel
         //encontrar ':' para determinar cuando termina el nombre del canal y cuando empieza el mensaje
         int pos = command.find(':');
         if (pos == std::string::npos){
@@ -649,7 +657,6 @@ void Server::processCommand(int clientFd, std::string command) {
         }
         std::string channelName = command.substr(5, pos - 6);
         std::string msg = command.substr(pos + 1);
-        deleteCarriageReturn(channelName);
         if (checkChannelExistence(clientFd, channelName) || checkChannelMembership(clientFd, channelName))
             return;
         for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){//Recorrer los canales a los que pertenece el cliente
@@ -662,15 +669,17 @@ void Server::processCommand(int clientFd, std::string command) {
                         }
                         _channels[j].removeClient(*_clients[clientFd]);//Eliminar al cliente del canal
                         _clients[clientFd]->leaveChannel(channelName);//Eliminar el canal de los canales a los que pertenece el cliente
+                        if (_channels[j].getMembers().empty()){//Si el canal se queda sin miembros
+                            _channels.erase(_channels.begin() + j);//Eliminar el canal
+                            std::cerr << "[DEBUG] Canal eliminado" << std::endl;
+                        }
                     }
                 }
             }
-            
         }
-    }else if (std::strncmp(command.c_str(), "NAMES ", 6) == 0 && _clients[clientFd]->getPwdSent()){
+    }else if (std::strncmp(command.c_str(), "NAMES ", 6) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){
         std::cerr << "[DEBUG] NAMES DETECTADO" << std::endl;
         std::string channelName = command.substr(6);
-        deleteCarriageReturn(channelName);
         names(clientFd, channelName);
 
     }else if (std::strncmp(command.c_str(), "WHOIS ", 6) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth() && _clients[clientFd]->getIsOperator()){
@@ -682,7 +691,6 @@ void Server::processCommand(int clientFd, std::string command) {
             send(clientFd, response.c_str(), response.size(), 0);
             return;
         }
-        deleteCarriageReturn(nickname);
         int userFd = findUserByNick(nickname);
         if (userFd == -1){
             response = "ERROR :No such nickname\r\n";
@@ -695,7 +703,32 @@ void Server::processCommand(int clientFd, std::string command) {
         response = ":" SRV_NAME " " RPL_ENDOFWHOIS " " + _clients[clientFd]->getNickname() + " :End of WHOIS list\r\n";
         send(clientFd, response.c_str(), response.size(), 0);
 
-    }else {
+    } else if (std::strncmp(command.c_str(), "LIST", 4) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){
+        std::cerr << "[DEBUG] LIST DETECTADO" << std::endl;
+        //Hacer la version de LIST general y LIST canal o canal1, canal2, canal3
+        
+        if (command.length() == 4){
+            //std::cerr << "[DEBUG] LIST general, obtener modo: " + getChannelMode("#general") << std::endl;
+            // Primer header
+            response = ":" SRV_NAME " " RPL_LISTSTART " " + _clients[clientFd]->getNickname() + " Channel :Users Name\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            // itera sobre los canales existentes y envía la información de cada uno
+            for (size_t i = 0; i < _channels.size(); i++){
+                std::string channelName = _channels[i].getName();
+                std::string mode = getChannelMode(channelName);
+                //std::cerr << "[DEBUG] NOMBRE DEL CANAL: " << channelName  << " Y modo: " + mode << std::endl;
+                if (mode == "t"){
+                    std::string topic = _channels[i].getTopic();
+                    response = ":" SRV_NAME " " RPL_LIST " " + _clients[clientFd]->getNickname() + " " + channelName + " " + std::to_string(_channels[i].getMembers().size()) + " :" + topic + "\r\n";
+                    //std::cerr << "[DEBUG] Enviando información de canal: " << channelName << std::endl;
+                    send(clientFd, response.c_str(), response.size(), 0);
+                }
+            }
+            response = ":" SRV_NAME " " RPL_LISTEND " " + _clients[clientFd]->getNickname() + " :End of /LIST\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+        }
+    }
+    else {
         response = "ERROR :Unknown command ma G\r\n";
     }
     //for tests print client nickname, username and realname
