@@ -634,19 +634,28 @@ void Server::processCommand(int clientFd, std::string command) {
         std::cerr << "[DEBUG] MODE DETECTADO" << std::endl;
         std::string channel = command.substr(5);
         if (channel.empty()){
-            response = "ERROR :No mode specified\r\n";
+            response = "ERROR :No channel specified\r\n";
             send(clientFd, response.c_str(), response.size(), 0);
             return;
         }
-        std::string channelName = channel.substr(0, channel.find(' '));
-        std::string modeStr = getChannelMode(channelName);
-        if (checkChannelExistence(clientFd, channelName) || checkChannelMembership(clientFd, channelName))
-            return;
-        response = ":" SRV_NAME " " RPL_CHANNELMODEIS " " + _clients[clientFd]->getNickname() + " " + channelName + " +" + modeStr + "\r\n";
-        send(clientFd, response.c_str(), response.size(), 0);
-        //enviar RPL_CREATIONTIME
-        response = ":" SRV_NAME " " RPL_CREATIONTIME " " + _clients[clientFd]->getNickname() + " " + channelName + " " + std::to_string(time(NULL)) + "\r\n";
-        send(clientFd, response.c_str(), response.size(), 0);
+        std::size_t getter = channel.find(' ');// Aqui busco a ver si después del segundo argumento existe un espacio, en cuyo caso será para setear un modo, si no es para gettearlo.
+        if (getter == std::string::npos){
+            std::string modeStr = getChannelMode(channel);
+            if (checkChannelExistence(clientFd, channel) || checkChannelMembership(clientFd, channel))
+                return;
+            //estos dos son para GET
+            response = ":" SRV_NAME " " RPL_CHANNELMODEIS " " + _clients[clientFd]->getNickname() + " " + channel + " +" + modeStr + "\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            //enviar RPL_CREATIONTIME
+            response = ":" SRV_NAME " " RPL_CREATIONTIME " " + _clients[clientFd]->getNickname() + " " + channel + " " + std::to_string(time(NULL)) + "\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+        }
+        else {
+            std::string channelName = channel.substr(0, channel.find(' '));
+            std::string mode  = channel.substr(getter + 1);
+            //aqui van todo lo del setter de MODE.
+        }
+        //
     }else if (std::strncmp(command.c_str(), "PART ", 5) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){//PART #channel
         //encontrar ':' para determinar cuando termina el nombre del canal y cuando empieza el mensaje
         int pos = command.find(':');
