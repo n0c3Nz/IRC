@@ -11,6 +11,7 @@ class Channel {
 		std::string						_topic;
 		std::vector<Client>				_members;
 		std::vector<std::string>		_operators;
+		std::vector <std::string>		_invited;
 		std::string						_password;
 		bool							_isPrivate;
 		bool							_Pwd;
@@ -27,6 +28,7 @@ class Channel {
 		std::string		getPwd() const;
 		std::string		getMode() const;
 		std::string		getTopic() const;
+		void			setMode(const std::string &mode);
 		void			addOperator(const std::string &nick);
 		void			removeOperator(const std::string &nick);
 		void			addClient(Client &client);

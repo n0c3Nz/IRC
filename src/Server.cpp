@@ -526,7 +526,7 @@ void Server::processCommand(int clientFd, std::string command) {
         return;
     }else if (std::strncmp(command.c_str(), "PING", 4) == 0){
         std::cout << "[LOG] COMMAND: PING DETECTADO" << std::endl;
-        std::string token = command.substr(5, command.length() - 6);
+        std::string token = command.substr(5, command.length() - 5);
         response = "PONG " SRV_NAME " " + token + " \r\n";
         std::cerr << "[DEBUG] Respondiendo a PING con PONG: " << response << std::endl;
         send(clientFd, response.c_str(), response.size(), 0);
@@ -534,7 +534,7 @@ void Server::processCommand(int clientFd, std::string command) {
     }else if (std::strncmp(command.c_str(), "PASS ", 5) == 0){
         std::cout << "[LOG] COMMAND: PASS DETECTADO" << std::endl;
         //Obtenemos la contraseña
-        std::string password = command.substr(5, command.length() - 4);// PASS 1234
+        std::string password = command.substr(5);// PASS 1234
         if (password.empty()){
             std::cerr << "ERROR :Password entregada vacía\r\n" << std::endl;
             response = "ERROR :Password vacío\r\n";
@@ -631,7 +631,7 @@ void Server::processCommand(int clientFd, std::string command) {
 		}
 		//sendConfirmJoin(clientFd, channelName);
     }else if (std::strncmp(command.c_str(), "MODE ", 5) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){
-        std::cerr << "[DEBUG] MODE DETECTADO" << std::endl;
+        std::cerr << "[DEBUG] MODE DETECTADO" << std::endl;// ejemplo simple MODE #channel +o nick ó MODE #channel como getter
         std::string channel = command.substr(5);
         if (channel.empty()){
             response = "ERROR :No channel specified\r\n";
@@ -654,6 +654,19 @@ void Server::processCommand(int clientFd, std::string command) {
             std::string channelName = channel.substr(0, channel.find(' '));
             std::string mode  = channel.substr(getter + 1);
             //aqui van todo lo del setter de MODE.
+            std::cerr << "[DEBUG] MODE SETTER: " << mode << std::endl;
+            if (checkChannelExistence(clientFd, channelName) || checkChannelMembership(clientFd, channelName))
+                return;//aqui antes iria un send del error pero bueno, lo dejo así por ahora
+            //comprobar si el usuario es operador del canal y si es asi setear el modo
+            if (_channels[0].isOperator(_clients[clientFd]->getNickname())){
+                //contar cuantos + y - hay en el modo para saber cuantas operaciones hacer
+
+                _channels[0].setMode(mode);
+                std::cerr << "[DEBUG] Modo del canal " << channelName << " cambiado a " << mode << std::endl;
+            }else{
+                response = "ERROR :You're not channel operator\r\n";
+                send(clientFd, response.c_str(), response.size(), 0);
+            }
         }
         //
     }else if (std::strncmp(command.c_str(), "PART ", 5) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){//PART #channel
