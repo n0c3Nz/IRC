@@ -65,6 +65,24 @@ std::string Server::getPassword(void) const{
 	return this->_password;
 }
 
+std::string Server::getChannelTopic(const std::string &channelName)
+{
+    for (int i = 0; i < _channels.size(); i++)
+    {
+        if (_channels[i].getName() == channelName)
+            return _channels[i].getTopic();
+    }
+    return "Not found Topic";
+}
+
+int Server::isChannelOperator(const std::string &channelName, std::string &nick){
+    for (int i = 0; i < _channels.size(); i++)
+    {
+        if (_channels[i].getName() == channelName)
+                return _channels[i].isOperator(nick);
+    }
+    return 0;
+}
 // Setters
 
 void Server::setPort(int port){
@@ -88,6 +106,18 @@ void Server::setNickname(int clientFd, const std::string &nickname) {
     _clients[clientFd]->setNickname(nickname);
     std::cerr << "[DEBUG] Nombre establecido para el nuevo cliente: " << nickname << std::endl;
     return;
+}
+
+void Server::setChannelTopic(std::string &channelName, std::string &topic)
+{
+    for (int i = 0; i < _channels.size(); i++)
+    {
+        if (channelName == _channels[i].getName())
+        {
+            _channels[i].setTopic(topic);
+            return;
+        }
+    }
 }
 
 // Methods
@@ -420,7 +450,7 @@ void Server::sendConfirmJoin(int clientFd, const std::string &channelName){
         }
     }
     //Topic
-    response = ":" SRV_NAME " " RPL_TOPIC " " + _clients[clientFd]->getNickname() + " " + channelName + " :No topic is set\r\n";
+    response = ":" SRV_NAME " " RPL_TOPIC " " + _clients[clientFd]->getNickname() + " " + channelName + " :" + getChannelTopic(channelName) + "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
     response = ":" SRV_NAME " " RPL_NAMREPLY " " + _clients[clientFd]->getNickname() + " = " + channelName + " :" + allMembers + "\r\n";
     send(clientFd, response.c_str(), response.size(), 0);
@@ -630,6 +660,45 @@ void Server::processCommand(int clientFd, std::string command) {
 			std::cerr << "[DEBUG] " << _clients[clientFd]->getJoinedChannels()[i] << std::endl;
 		}
 		//sendConfirmJoin(clientFd, channelName);
+    }else if (std::strncmp(command.c_str(), "TOPIC ", 6) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){
+        std::cerr << "[DEBUG] TOPIC DETECTADO" << std::endl;
+        std::size_t pos = command.find(':', 6);
+        if (pos == std::string::npos){
+            std::cerr << "[DEBUG] no ha detectado los ':' es getter" << std::endl;
+            std::string channel = command.substr(6);
+            if (channel.empty()){// Si el nombre del canal está vacío lanzamos error 461.
+                std::string response = ":" SRV_NAME " " ERR_NEEDMOREPARAMS " " + _clients[clientFd]->getNickname() + " " + "TOPIC :Not enough parameters" + "\r\n";   
+                send(clientFd, response.c_str(), response.size(), 0);
+                return ;//No channel specified
+            }
+            if (checkChannelExistence(clientFd, channel) || checkChannelMembership(clientFd, channel))
+                return ;
+            std::string response = ":" SRV_NAME " " RPL_TOPIC " " + _clients[clientFd]->getNickname() + " " + channel + " :" + getChannelTopic(channel) + "\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
+        std::string channel = command.substr(6, pos - 7);
+        std::string topic = command.substr(pos + 1);
+        if (channel.empty()){// Si el nombre del canal está vacío lanzamos error 461.
+            std::string response = ":" SRV_NAME " " ERR_NEEDMOREPARAMS " " + _clients[clientFd]->getNickname() + " " + "TOPIC :Not enough parameters" + "\r\n";   
+            send(clientFd, response.c_str(), response.size(), 0);
+            return ;//No channel specified
+        }
+        if (checkChannelExistence(clientFd, channel) || checkChannelMembership(clientFd, channel)){
+            std::cerr << "[DEBUG] El canal no existe o no es miembro" << std::endl;
+            return ;
+        }
+        std::string nick = _clients[clientFd]->getNickname();
+        if (isChannelOperator(channel, nick)){
+            setChannelTopic(channel, topic);
+            std::string response = ":" SRV_NAME " " RPL_TOPIC " " + _clients[clientFd]->getNickname() + " " + channel + " :" + getChannelTopic(channel) + "\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            //mandar la confirmacion aqui
+        }else {
+            std::string response = ":" SRV_NAME " " ERR_CHANOPRIVSNEEDED " " + _clients[clientFd]->getNickname() + " " + channel + " :You're not channel operator" + "\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+        }
+
     }else if (std::strncmp(command.c_str(), "MODE ", 5) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){
         std::cerr << "[DEBUG] MODE DETECTADO" << std::endl;// ejemplo simple MODE #channel +o nick ó MODE #channel como getter
         std::string channel = command.substr(5);

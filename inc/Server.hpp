@@ -28,12 +28,17 @@ class Server {
 		const std::map<int, std::shared_ptr<Client>>& getClients() const;
 		const std::vector <Channel>& getChannels() const;
 		std::string getPassword(void) const;
+		//esto es nuevo de la rama de c3nz :D
+		std::string	getChannelMode(const std::string &channelName) const;
+		std::string getChannelTopic(const std::string &channelName);
+		int isChannelOperator(const std::string &channelName, std::string &nick);
 		// Setters
 		void setPort(int port);
 		void setSocket(int socket);
 		void setClients(std::map<int, std::shared_ptr<Client>> clients);
 		void setChannels(std::vector <Channel> channels);
 		void setNickname(int clientFd, const std::string &nickname);
+		void setChannelTopic(std::string &channelName, std::string &topic);
 		// Methods
 		void AnnounceConnection(int clientFd) const;
 		void start(void);
@@ -63,8 +68,6 @@ class Server {
 		std::map<std::string, std::string>		parseJoinRequets(std::string request) const;
 		int		exist(const std::string &channelName) const;
 		int		authenticateChannel(const Channel &channel, const std::string &password) const;
-		//esto es nuevo de la rama de c3nz :D
-		std::string	getChannelMode(const std::string &channelName) const;
 };
 
 void setNonBlocking(int socketFd);

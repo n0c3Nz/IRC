@@ -29,6 +29,7 @@ class Channel {
 		std::string		getMode() const;
 		std::string		getTopic() const;
 		void			setMode(const std::string &mode);
+		void			setTopic(const std::string &topic);
 		void			addOperator(const std::string &nick);
 		void			removeOperator(const std::string &nick);
 		void			addClient(Client &client);

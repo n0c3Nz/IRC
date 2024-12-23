@@ -61,6 +61,11 @@ void	Channel::setMode(const std::string &mode)
 	this->_mode = mode;
 }
 
+void	Channel::setTopic(const std::string &topic)
+{
+	this->_topic = topic;
+}
+
 void	Channel::addOperator(const std::string &nick)
 {
 	//comprobar si ya es operador
