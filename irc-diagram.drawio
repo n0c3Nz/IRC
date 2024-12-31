@@ -1,0 +1,275 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" version="26.0.2">
+  <diagram id="codeviz-diagram" name="System Diagram">
+    <mxGraphModel dx="1434" dy="741" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" background="#D4D4D4" math="0" shadow="0" adaptiveColors="simple">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="subGraph7" value="" style="html=1;whiteSpace=wrap;container=1;fillOpacity=20;strokeWidth=2;containerType=none;recursiveResize=0;movable=1;resizable=1;autosize=0;dropTarget=0;labelBackgroundColor=none;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="54" y="202" width="1360" height="1562" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph6" value="" style="html=1;whiteSpace=wrap;container=1;fillColor=#182E3E;strokeColor=#FFFFFF;dashed=1;fillOpacity=20;strokeWidth=2;containerType=none;recursiveResize=0;movable=1;resizable=1;autosize=0;dropTarget=0;labelBackgroundColor=none;fontColor=#FFFFFF;" parent="subGraph7" vertex="1">
+          <mxGeometry x="60" y="925" width="720" height="445" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph5" value="" style="html=1;whiteSpace=wrap;container=1;fillColor=#182E3E;strokeColor=#FFFFFF;dashed=1;fillOpacity=20;strokeWidth=2;containerType=none;recursiveResize=0;movable=1;resizable=1;autosize=0;dropTarget=0;labelBackgroundColor=none;fontColor=#FFFFFF;" parent="subGraph6" vertex="1">
+          <mxGeometry x="50" y="205" width="660" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="MemberManager" value="Member Manager&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph5" vertex="1">
+          <mxGeometry x="40" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="OperatorManager" value="Operator Manager&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph5" vertex="1">
+          <mxGeometry x="320" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="TopicManager" value="Topic Manager&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph5" vertex="1">
+          <mxGeometry x="180" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ModeManager" value="Mode Manager&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph5" vertex="1">
+          <mxGeometry x="460" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph5_label" value="Channel Components" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;labelBackgroundColor=none;spacing=5;fontColor=#FFFFFF;" parent="subGraph6" vertex="1">
+          <mxGeometry x="58" y="213" width="584" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="ChannelHandler" value="Channel Handler&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph6" vertex="1">
+          <mxGeometry x="232" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph6_label" value="Channel Container" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;labelBackgroundColor=none;spacing=5;fontColor=#FFFFFF;" parent="subGraph7" vertex="1">
+          <mxGeometry x="68" y="933" width="644" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph4" value="" style="html=1;whiteSpace=wrap;container=1;fillColor=#182E3E;strokeColor=#FFFFFF;dashed=1;fillOpacity=20;strokeWidth=2;containerType=none;recursiveResize=0;movable=1;resizable=1;autosize=0;dropTarget=0;labelBackgroundColor=none;fontColor=#FFFFFF;" parent="subGraph7" vertex="1">
+          <mxGeometry x="780" y="945" width="580" height="435" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph3" value="" style="html=1;whiteSpace=wrap;container=1;fillColor=#182E3E;strokeColor=#FFFFFF;dashed=1;fillOpacity=20;strokeWidth=2;containerType=none;recursiveResize=0;movable=1;resizable=1;autosize=0;dropTarget=0;labelBackgroundColor=none;fontColor=#FFFFFF;" parent="subGraph4" vertex="1">
+          <mxGeometry x="50" y="215" width="520" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="UserAuth" value="User Authentication&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph3" vertex="1">
+          <mxGeometry x="320" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ChannelParticipation" value="Channel Participation&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph3" vertex="1">
+          <mxGeometry x="40" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="MessageBuffer" value="Message Buffer&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph3" vertex="1">
+          <mxGeometry x="180" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph3_label" value="Client Components" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;labelBackgroundColor=none;spacing=5;fontColor=#FFFFFF;" parent="subGraph4" vertex="1">
+          <mxGeometry x="58" y="223" width="444" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="ClientHandler" value="Client Handler&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph4" vertex="1">
+          <mxGeometry x="220" y="140" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph4_label" value="Client Container" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;labelBackgroundColor=none;spacing=5;fontColor=#FFFFFF;" parent="subGraph7" vertex="1">
+          <mxGeometry x="788" y="953" width="504" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph2" value="" style="html=1;whiteSpace=wrap;container=1;fillColor=#182E3E;strokeColor=#FFFFFF;dashed=1;fillOpacity=20;strokeWidth=2;containerType=none;recursiveResize=0;movable=1;resizable=1;autosize=0;dropTarget=0;labelBackgroundColor=none;fontColor=#FFFFFF;" parent="subGraph7" vertex="1">
+          <mxGeometry x="212" y="425" width="860" height="445" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph1" value="" style="html=1;whiteSpace=wrap;container=1;fillColor=#182E3E;strokeColor=#FFFFFF;dashed=1;fillOpacity=20;strokeWidth=2;containerType=none;recursiveResize=0;movable=1;resizable=1;autosize=0;dropTarget=0;labelBackgroundColor=none;fontColor=#FFFFFF;" parent="subGraph2" vertex="1">
+          <mxGeometry x="61" y="205" width="800" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="AuthManager" value="Authentication Manager&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph1" vertex="1">
+          <mxGeometry x="600" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ClientManager" value="Client Manager&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph1" vertex="1">
+          <mxGeometry x="460" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ChannelManager" value="Channel Manager&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph1" vertex="1">
+          <mxGeometry x="40" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="CommandProcessor" value="Command Processor&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph1" vertex="1">
+          <mxGeometry x="320" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ErrorHandler" value="Error Handler&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph1" vertex="1">
+          <mxGeometry x="180" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph1_label" value="Server Components" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;labelBackgroundColor=none;spacing=5;fontColor=#FFFFFF;" parent="subGraph2" vertex="1">
+          <mxGeometry x="69" y="213" width="724" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="ServerCore" value="Server Core&lt;br&gt;C++" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph2" vertex="1">
+          <mxGeometry x="243" y="120" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph2_label" value="Core Server Container" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;labelBackgroundColor=none;spacing=5;fontColor=#FFFFFF;" parent="subGraph7" vertex="1">
+          <mxGeometry x="220" y="433" width="784" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph0" value="" style="html=1;whiteSpace=wrap;container=1;fillColor=#182E3E;strokeColor=#FFFFFF;dashed=1;fillOpacity=20;strokeWidth=2;containerType=none;recursiveResize=0;movable=1;resizable=1;autosize=0;dropTarget=0;labelBackgroundColor=none;fontColor=#FFFFFF;" parent="subGraph7" vertex="1">
+          <mxGeometry x="394" y="95" width="240" height="320" as="geometry" />
+        </mxCell>
+        <mxCell id="Socket" value="Socket Manager&lt;br&gt;TCP/IP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph0" vertex="1">
+          <mxGeometry x="43" y="42" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="EPoll" value="Event Handler&lt;br&gt;epoll" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="subGraph0" vertex="1">
+          <mxGeometry x="43" y="176" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph0_label" value="Network Layer" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;labelBackgroundColor=none;spacing=5;fontColor=#FFFFFF;" parent="subGraph7" vertex="1">
+          <mxGeometry x="402" y="103" width="164" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="subGraph7_label" value="IRC Server System" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;labelBackgroundColor=none;spacing=5;fontColor=#FFFFFF;" parent="1" vertex="1">
+          <mxGeometry x="62" y="210" width="1284" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="Client1" value="IRC Client 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="1" vertex="1">
+          <mxGeometry x="901" y="215" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="Client2" value="IRC Client 2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#182E3E;labelBackgroundColor=none;strokeColor=#FFFFFF;fontColor=#FFFFFF;" parent="1" vertex="1">
+          <mxGeometry x="96" y="215" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_Client1_Socket_0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="Client1" target="Socket" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_Client1_Socket_0_label" value="Connects via TCP/IP" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_Client1_Socket_0" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_Client2_Socket_1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="Client2" target="Socket" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_Client2_Socket_1_label" value="Connects via TCP/IP" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_Client2_Socket_1" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_Socket_EPoll_2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="Socket" target="EPoll" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_Socket_EPoll_2_label" value="Handles connections" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_Socket_EPoll_2" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_EPoll_ServerCore_3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="EPoll" target="ServerCore" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_EPoll_ServerCore_3_label" value="Dispatches events" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_EPoll_ServerCore_3" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_ServerCore_ClientHandler_4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="ServerCore" target="ClientHandler" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_ServerCore_ClientHandler_4_label" value="Manages" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_ServerCore_ClientHandler_4" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_ServerCore_ChannelHandler_5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="ServerCore" target="ChannelHandler" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_ServerCore_ChannelHandler_5_label" value="Manages" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_ServerCore_ChannelHandler_5" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_ServerCore_CommandProcessor_6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="ServerCore" target="CommandProcessor" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_ServerCore_CommandProcessor_6_label" value="Uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_ServerCore_CommandProcessor_6" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_ServerCore_ErrorHandler_7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="ServerCore" target="ErrorHandler" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_ServerCore_ErrorHandler_7_label" value="Uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_ServerCore_ErrorHandler_7" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_ClientHandler_UserAuth_8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="ClientHandler" target="UserAuth" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_ClientHandler_UserAuth_8_label" value="Uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_ClientHandler_UserAuth_8" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_ClientHandler_ChannelParticipation_9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="ClientHandler" target="ChannelParticipation" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_ClientHandler_ChannelParticipation_9_label" value="Uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_ClientHandler_ChannelParticipation_9" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_ClientHandler_MessageBuffer_10" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="ClientHandler" target="MessageBuffer" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_ClientHandler_MessageBuffer_10_label" value="Uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_ClientHandler_MessageBuffer_10" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_ChannelHandler_MemberManager_11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="ChannelHandler" target="MemberManager" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_ChannelHandler_MemberManager_11_label" value="Uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_ChannelHandler_MemberManager_11" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_ChannelHandler_OperatorManager_12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="ChannelHandler" target="OperatorManager" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_ChannelHandler_OperatorManager_12_label" value="Uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_ChannelHandler_OperatorManager_12" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_ChannelHandler_TopicManager_13" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="ChannelHandler" target="TopicManager" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_ChannelHandler_TopicManager_13_label" value="Uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_ChannelHandler_TopicManager_13" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_ChannelHandler_ModeManager_14" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="ChannelHandler" target="ModeManager" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_ChannelHandler_ModeManager_14_label" value="Uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_ChannelHandler_ModeManager_14" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_AuthManager_UserAuth_15" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="AuthManager" target="UserAuth" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_AuthManager_UserAuth_15_label" value="Validates" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_AuthManager_UserAuth_15" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_ClientManager_ClientHandler_16" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="ClientManager" target="ClientHandler" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_ClientManager_ClientHandler_16_label" value="Manages" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_ClientManager_ClientHandler_16" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_ChannelManager_ChannelHandler_17" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="ChannelManager" target="ChannelHandler" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_ChannelManager_ChannelHandler_17_label" value="Manages" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_ChannelManager_ChannelHandler_17" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_CommandProcessor_ClientHandler_18" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FFFFFF;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="CommandProcessor" target="ClientHandler" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_CommandProcessor_ClientHandler_18_label" value="Processes commands for" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_CommandProcessor_ClientHandler_18" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-L_CommandProcessor_ChannelHandler_19" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#23445D;strokeWidth=2;jumpStyle=arc;jumpSize=10;spacing=15;labelBackgroundColor=none;labelBorderColor=none;fontColor=default;" parent="1" source="CommandProcessor" target="ChannelHandler" edge="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-L_CommandProcessor_ChannelHandler_19_label" value="Processes commands for" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];labelBackgroundColor=none;fontColor=#FFFFFF;" parent="edge-L_CommandProcessor_ChannelHandler_19" vertex="1" connectable="0">
+          <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

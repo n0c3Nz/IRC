@@ -75,6 +75,7 @@ std::string Server::getChannelTopic(const std::string &channelName)
     return "Not found Topic";
 }
 
+// Retorna 1 si el usuario es operador del canal, 0 en caso contrario
 int Server::isChannelOperator(const std::string &channelName, std::string &nick){
     for (int i = 0; i < _channels.size(); i++)
     {
@@ -260,6 +261,249 @@ void Server::names(int clientFd, std::string channelName){
     send(clientFd, response.c_str(), response.size(), 0);
 }
 
+void Server::mode(int clientFd, std::string &channelName, std::string &modes){
+    std::string response;
+    std::string currentModes = getChannelMode(channelName);
+    std::string nickname = _clients[clientFd]->getNickname();
+    std::string host = _clients[clientFd]->getHost();
+    //Recorrer modes en busca de '+' y '-', en caso de '+' si aparece 'o' ó 'k' hay que ir al siguiente argumento para obtener el nickname/clave y si el siguiente carácter es un 'k' ó 'o' se iría al último argumento para guardar el nickname/clave
+    //Además, por cada modo que se quiera añadir o quitar hay que comprobar si ese modo ya está añadido o quitado
+    //no hay que comprobar si el usuario es operador del canal, ya que el servidor se encarga de eso
+
+    //splitear los tokens de modes por ' '
+    std::vector<std::string> tokens;
+    std::istringstream iss(modes);
+    for(std::string s; iss >> s; )
+        tokens.push_back(s);
+    std::cerr << "[DEBUG] Tokens: " << tokens.size() << std::endl;
+    std::string setModes;
+    std::string unsetModes;
+    std::string supportedModes = MODES;
+    //Vamos a operar sobre el primer token que es el modo para crear std::string set y std::string unset
+    for (int i = 0; i < tokens[0].length(); i++){
+        if (tokens[0][i] == '+'){
+            for (int j = i + 1; j < tokens[0].length(); j++){
+                //comprobar si el modo está en MODES
+                if (supportedModes.find(tokens[0][j]) != std::string::npos)
+                    setModes += tokens[0][j];
+                else{
+                    i += j;
+                    break;
+                }
+            }
+        }
+        if (tokens[0][i] == '-'){
+            for (int j = i + 1; j < tokens[0].length(); j++){
+                //comprobar si el modo está en MODES
+                if (supportedModes.find(tokens[0][j]) != std::string::npos)
+                    unsetModes += tokens[0][j];
+                else{
+                    i += j;
+                    break;
+                }
+            }
+        }
+    }
+    std::cerr << "[DEBUG] SetModes: " << setModes << std::endl;
+    std::cerr << "[DEBUG] UnsetModes: " << unsetModes << std::endl;//Hasta aquí todo correcto
+
+    //bool modeWithArg = false;
+    //Primero los unsetModes, vamos a recorrer unsetModes y comprobar si el canal tiene esos modos, si los tiene los quitamos y notificamos a los miembros del canal
+    for (int i = 0 ; i < unsetModes.length(); i++){
+        if (currentModes.find(unsetModes[i]) != std::string::npos){
+            if (unsetModes[i] == 'o')
+            {
+                if (i + 1 < tokens.size()){
+                    std::string nickname = tokens[i + 1];
+                    if (unsetModes[i] == 'o'){
+                        std::string key = tokens[i + 2];
+                        //Quitar el modo
+                        for (int j = 0; j < _channels.size(); j++){
+                            if (_channels[j].getName() == channelName){
+                                _channels[j].removeOperator(nickname);
+                                //Notificar a los miembros del canal
+                                std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
+                                                        + _clients[clientFd]->getUsername() + "@" 
+                                                        + _clients[clientFd]->getHost() + " MODE " 
+                                                        + channelName + " -" + unsetModes[i] + " " + nickname + "\r\n";
+                                notifyAllMembers(clientFd, channelName, notification);
+                            }
+                        }
+                    }
+                }
+            }else if (unsetModes[i] == 'k'){
+                //Quitar el modo
+                for (int j = 0; j < _channels.size(); j++){
+                    if (_channels[j].getName() == channelName){
+                        // Tomar el modo actual
+                        std::string currentMode = _channels[j].getMode();
+                        // Buscar la posición de 'k'
+                        std::string::size_type pos = currentMode.find('k');
+                        //si no se encuentra 'k', se ignora
+                        if (pos == std::string::npos) {
+                            continue;
+                        }
+                        // Si se encuentra 't', se elimina
+                        if (pos != std::string::npos) {
+                            currentMode.erase(pos, 1);
+                        }
+                        _channels[j].setMode(currentMode);
+                        _channels[j].setIfPwd(false);
+                        _channels[j].setPwd("");
+                        _channels[j].setisPrivate(false);
+                        // Guardar el nuevo modo en el channel
+                        //Notificar a los miembros del canal
+                        std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
+                                                + _clients[clientFd]->getUsername() + "@" 
+                                                + _clients[clientFd]->getHost() + " MODE " 
+                                                + channelName + " -" + unsetModes[i] + "\r\n";
+                        notifyAllMembers(clientFd, channelName, notification);
+                    }
+                }
+            }else if (unsetModes[i] == 'i'){
+                //Quitar el modo
+                for (int j = 0; j < _channels.size(); j++){
+                    if (_channels[j].getName() == channelName){
+                        // Tomar el modo actual
+                        std::string currentMode = _channels[j].getMode();
+                        // Buscar la posición de 'i'
+                        std::string::size_type pos = currentMode.find('i');
+                        //si no se encuentra 't', se ignora
+                        if (pos == std::string::npos) {
+                            continue;
+                        }
+                        // Si se encuentra 't', se elimina
+                        if (pos != std::string::npos) {
+                            currentMode.erase(pos, 1);
+                        }
+                        // Guardar el nuevo modo en el channel
+                        _channels[j].setMode(currentMode);
+                        _channels[j].setisPrivate(false);
+                        //Notificar a los miembros del canal
+                        std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
+                                                + _clients[clientFd]->getUsername() + "@" 
+                                                + _clients[clientFd]->getHost() + " MODE " 
+                                                + channelName + " -" + unsetModes[i] + "\r\n";
+                        notifyAllMembers(clientFd, channelName, notification);
+                    }
+                }
+            }else if (unsetModes[i] == 't'){
+                //Quitar el modo
+                for (int j = 0; j < _channels.size(); j++) {
+                    if (_channels[j].getName() == channelName) {
+                        // Tomar el modo actual
+                        std::string currentMode = _channels[j].getMode();
+                        // Buscar la posición de 't'
+                        std::string::size_type pos = currentMode.find('t');
+                        //si no se encuentra 't', se ignora
+                        if (pos == std::string::npos) {
+                            continue;
+                        }
+                        // Si se encuentra 't', se elimina
+                        if (pos != std::string::npos) {
+                            currentMode.erase(pos, 1);
+                        }
+                        // Guardar el nuevo modo en el channel
+                        _channels[j].setMode(currentMode);
+                        // Opcional: resetear el topic
+                        _channels[j].setTopic("No topic is set");
+                        // Notificar a los miembros del canal
+                        std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
+                                                + _clients[clientFd]->getUsername() + "@" 
+                                                + _clients[clientFd]->getHost() 
+                                                + " MODE " + channelName + " -" + unsetModes[i] + "\r\n";
+                        notifyAllMembers(clientFd, channelName, notification);
+                    }
+                }
+            }
+        }
+    }
+    currentModes = getChannelMode(channelName);
+    //Ahora los setModes, vamos a recorrer setModes y comprobar si el canal tiene esos modos, si los tiene los añadimos y notificamos a los miembros del canal
+    //Si el modo es 'o' ó 'k' hay que ir al siguiente argumento para obtener el nickname/clave
+    for (int i = 0 ; i < setModes.length(); i++){
+        if (currentModes.find(setModes[i]) == std::string::npos){
+            if (setModes[i] == 'o' || setModes[i] == 'k'){
+                if (i + 1 < tokens.size()){
+                    std::string nickname = tokens[i + 1];
+                    if (setModes[i] == 'o'){
+                        std::string key = tokens[i + 2];
+                        //Añadir el modo
+                        for (int j = 0; j < _channels.size(); j++){
+                            if (_channels[j].getName() == channelName){
+                                _channels[j].addOperator(nickname);
+                                //Notificar a los miembros del canal
+                                std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
+                                                        + _clients[clientFd]->getUsername() + "@" 
+                                                        + _clients[clientFd]->getHost() + " MODE " 
+                                                        + channelName + " +" + setModes[i] + " " + nickname + "\r\n";
+                                notifyAllMembers(clientFd, channelName, notification);
+                            }
+                        }
+                    }
+                    else if (setModes[i] == 'k'){
+                        std::string key = tokens[i + 1];
+                        //Añadir el modo
+                        for (int j = 0; j < _channels.size(); j++){
+                            if (_channels[j].getName() == channelName){
+                                _channels[j].setIfPwd(true);
+                                _channels[j].setPwd(key);
+                                //Añadir k a _mode si no está presente ya
+                                if (currentModes.find(setModes[i]) == std::string::npos){
+                                    currentModes += "k";
+                                    _channels[j].setMode(currentModes);
+                                    //Notificar a los miembros del canal
+                                    std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
+                                                            + _clients[clientFd]->getUsername() + "@" 
+                                                            + _clients[clientFd]->getHost() + " MODE " 
+                                                            + channelName + " +" + setModes[i] + " " + key + "\r\n";
+                                    notifyAllMembers(clientFd, channelName, notification);
+                                }
+                            }
+                        }
+                    }
+                }
+            }else if (setModes[i] == 'i'){
+                //Añadir el modo
+                for (int j = 0; j < _channels.size(); j++){
+                    if (_channels[j].getName() == channelName){
+                        _channels[j].setisPrivate(true);
+                        //Añadir i a _mode
+                        if (currentModes.find(setModes[i]) == std::string::npos){
+                            currentModes += "i";
+                            _channels[j].setMode(currentModes);
+                            //Notificar a los miembros del canal
+                            std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
+                                                    + _clients[clientFd]->getUsername() + "@" 
+                                                    + _clients[clientFd]->getHost() + " MODE " 
+                                                    + channelName + " +" + setModes[i] + "\r\n";
+                            notifyAllMembers(clientFd, channelName, notification);
+                        }
+                    }
+                }
+            }else if (setModes[i] == 't'){
+                //Añadir el modo
+                for (int j = 0; j < _channels.size(); j++){
+                    if (_channels[j].getName() == channelName){
+                        _channels[j].setTopic("No topic is set");
+                        //Añadir t a _mode
+                        if (currentModes.find(setModes[i]) == std::string::npos){
+                            currentModes += "t";
+                            _channels[j].setMode(currentModes);
+                            //Notificar a los miembros del canal
+                            std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
+                                                    + _clients[clientFd]->getUsername() + "@" 
+                                                    + _clients[clientFd]->getHost() + " MODE " 
+                                                    + channelName + " +" + setModes[i] + "\r\n";
+                            notifyAllMembers(clientFd, channelName, notification);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+}
 // -------------------
 
 int checkEmptyAndAlnum(std::string str){
@@ -399,6 +643,19 @@ void	Server::sendPrivateMessage(std::string senderNick, std::string msg, std::st
     } else {
         std::string response = ":" SRV_NAME " " ERR_NOSUCHNICK " " + senderNick + " " + receiverNick + " :No such nick/channel\r\n";
         send(senderFd, response.c_str(), response.size(), 0);
+    }
+}
+
+void    Server::notifyAllMembers(int clientFd, std::string &channelName, std::string &msg)
+{
+    //Enviar la notificación de cambio de topic, esto tengo que ver como optimizarlo, (tengo que cambiar notification)
+    for (size_t i = 0; i < _channels.size(); i++){
+        if (_channels[i].getName() == channelName){
+            for (size_t j = 0; j < _channels[i].getMembers().size(); j++){
+                    std::cerr << "[DEBUG] Enviando notificación: " << msg << std::endl;
+                    send(_channels[i].getMembers()[j].getSocket(), msg.c_str(), msg.size(), 0);
+            }
+        }
     }
 }
 
@@ -701,18 +958,20 @@ void Server::processCommand(int clientFd, std::string command) {
 
     }else if (std::strncmp(command.c_str(), "MODE ", 5) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){
         std::cerr << "[DEBUG] MODE DETECTADO" << std::endl;// ejemplo simple MODE #channel +o nick ó MODE #channel como getter
-        std::string channel = command.substr(5);
-        if (channel.empty()){
+        std::string args = command.substr(5);// #channel +o nick
+        if (args.empty()){
             response = "ERROR :No channel specified\r\n";
             send(clientFd, response.c_str(), response.size(), 0);
             return;
         }
-        std::size_t getter = channel.find(' ');// Aqui busco a ver si después del segundo argumento existe un espacio, en cuyo caso será para setear un modo, si no es para gettearlo.
+        std::string channel = args.substr(0, args.find(' '));// #channel
+        if (checkChannelExistence(clientFd, channel) || checkChannelMembership(clientFd, channel))
+            return;
+        std::size_t getter = args.find(' ');// Aqui busco a ver si después del segundo argumento existe un espacio, en cuyo caso será para setear un modo, si no es para gettearlo.
         if (getter == std::string::npos){
             std::string modeStr = getChannelMode(channel);
-            if (checkChannelExistence(clientFd, channel) || checkChannelMembership(clientFd, channel))
-                return;
             //estos dos son para GET
+            std::cerr << "[DEBUG] MODE GETTER " << std::endl;
             response = ":" SRV_NAME " " RPL_CHANNELMODEIS " " + _clients[clientFd]->getNickname() + " " + channel + " +" + modeStr + "\r\n";
             send(clientFd, response.c_str(), response.size(), 0);
             //enviar RPL_CREATIONTIME
@@ -720,20 +979,21 @@ void Server::processCommand(int clientFd, std::string command) {
             send(clientFd, response.c_str(), response.size(), 0);
         }
         else {
-            std::string channelName = channel.substr(0, channel.find(' '));
-            std::string mode  = channel.substr(getter + 1);
-            //aqui van todo lo del setter de MODE.
-            std::cerr << "[DEBUG] MODE SETTER: " << mode << std::endl;
-            if (checkChannelExistence(clientFd, channelName) || checkChannelMembership(clientFd, channelName))
-                return;//aqui antes iria un send del error pero bueno, lo dejo así por ahora
-            //comprobar si el usuario es operador del canal y si es asi setear el modo
-            if (_channels[0].isOperator(_clients[clientFd]->getNickname())){
-                //contar cuantos + y - hay en el modo para saber cuantas operaciones hacer
+            //chModes debe ser el tercer argumento, es decir, está situado tras el segundo espacio.
 
-                _channels[0].setMode(mode);
-                std::cerr << "[DEBUG] Modo del canal " << channelName << " cambiado a " << mode << std::endl;
+            std::string chModes  = args.substr(getter + 1);
+            std::string nick = _clients[clientFd]->getNickname();
+            //aqui van todo lo del setter de MODE.
+            std::cerr << "[DEBUG] MODE SETTER: " << chModes << std::endl;
+            //comprobar si el usuario es operador del canal y si es asi setear el modo
+            if (isChannelOperator(channel, nick)){
+                //contar cuantos + y - hay en el modo para saber cuantas operaciones hacer, tio solo podemos hacer operaciones sobre un canal por MODE.
+                //usar la funcion mode
+                mode(clientFd, channel, chModes);
+                //_channels[0].setMode(chMode);
+                std::cerr << "[DEBUG] Modo del canal " << channel << " cambiado a " << chModes << std::endl;
             }else{
-                response = "ERROR :You're not channel operator\r\n";
+                response = ":" SRV_NAME " " ERR_CHANOPRIVSNEEDED " " + nick + " " + channel + " :You're not channel operator\r\n";
                 send(clientFd, response.c_str(), response.size(), 0);
             }
         }

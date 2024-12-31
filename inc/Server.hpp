@@ -57,7 +57,11 @@ class Server {
 		void motd(int clientFd);
 		void joinChannelServerSide(std::map<std::string, std::string> channelKey, int clientFd);
 		void names(int clientFd, std::string channelName);
+		void mode(int clientFd, std::string &channelName, std::string &modes);
+		//Auxiliar mode commands
+		//void setAndUnsetModes(int clientFd, std::string &channelName, std::string &modesToSet, std::string &modesToUnset, std::string &password);
 		//Auxiliar
+		void notifyAllMembers(int clientFd, std::string &channelName, std::string &msg);
 		int checkChannelExistence(int clientFd, const std::string &channelName);
 		int checkChannelMembership(int clientFd, const std::string &channelName);
 		void sendPrivateMessage(std::string senderNick, std::string msg, std::string receiverNick);

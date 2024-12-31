@@ -172,3 +172,18 @@ std::string Channel::getPwd() const
 {
 	return this->_password;
 }
+
+void	Channel::setIfPwd(const bool &pwd)
+{
+	this->_Pwd = true;
+}
+
+void	Channel::setisPrivate(bool isPrivate)
+{
+	this->_isPrivate = isPrivate;
+}
+
+void	Channel::setPwd(const std::string &pwd)
+{
+	this->_password = pwd;
+}

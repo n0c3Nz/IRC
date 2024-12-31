@@ -49,4 +49,8 @@
 //#define ERR_NOTONCHANNEL "442"//(442) si no está en el canal.
 #define ERR_NEEDMOREPARAMS "461"//(461) si faltan parámetros.
 
+//MODES
+#define MODES "kiot"
+
+
 #endif
