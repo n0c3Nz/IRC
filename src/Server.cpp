@@ -281,7 +281,10 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
     // Supongamos: tokens[0] = "-t+i"
     std::string modesStr = tokens[0];
     char currentSign = '\0';  // Puede ser '+' o '-'
-        
+    int modeWithArg = 0;
+    std::string setNickname;
+    std::string unsetNickname;
+    std::string key;
     for (int i = 0; i < modesStr.size(); i++) {
         // Si encontramos un + o -
         if (modesStr[i] == '+' || modesStr[i] == '-') {
@@ -289,10 +292,30 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
         }
         // Si encontramos un carácter que sea un modo soportado
         else if (supportedModes.find(modesStr[i]) != std::string::npos) {
-            if (currentSign == '+')
+            if (currentSign == '+'){
+                if (modesStr[i] == 'o'){
+                    modeWithArg++;
+                    setNickname = tokens[modeWithArg];
+                    if (setNickname.empty())
+                        continue;
+                }
+                else if (modesStr[i] == 'k'){
+                    modeWithArg++;
+                    key = tokens[modeWithArg];
+                    if (key.empty())
+                        continue;
+                }
                 setModes += modesStr[i];
-            else if (currentSign == '-')
+            }
+            else if (currentSign == '-'){
+                if (modesStr[i] == 'o'){
+                    modeWithArg++;
+                    unsetNickname = tokens[modeWithArg];
+                    if (unsetNickname.empty())
+                        continue;
+                }
                 unsetModes += modesStr[i];
+            }
         }
         // Si encontramos algo que no es '+' o '-' ni un modo soportado,
         // podríamos decidir ignorarlo, o romper, o manejarlo como error...
@@ -304,31 +327,24 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
     std::cerr << "[DEBUG] SetModes: " << setModes << std::endl;
     std::cerr << "[DEBUG] UnsetModes: " << unsetModes << std::endl;//Hasta aquí todo correcto
 
-    int modeWithArg = 0;
     //Primero los unsetModes, vamos a recorrer unsetModes y comprobar si el canal tiene esos modos, si los tiene los quitamos y notificamos a los miembros del canal
     for (int i = 0 ; i < unsetModes.length(); i++){
         std::cerr << "[DEBUG] INFO: UnsetModes[i]: " << unsetModes[i] << std::endl;
-        std::cerr << "[DEBUG] INFO: " << currentModes.find(unsetModes[i]) << std::endl;
-        std::cerr << "[DEBUG] INFO: ENTRA?" << std::endl;
         if (unsetModes[i] == 'o')
         {
-            modeWithArg++;
             // asi creo que está bien, en principio.
-            std::string nickname = tokens[modeWithArg];
-            std::cerr << "[DEBUG] Nickname del user al que quitamos el OP: " << nickname << std::endl;
-            if (nickname.empty())
-                continue;
+            std::cerr << "[DEBUG] Nickname del user al que quitamos el OP: " << unsetNickname << std::endl;
             if (unsetModes[i] == 'o'){
                 //Quitar el modo
                 for (int j = 0; j < _channels.size(); j++){//hmmm entra aqui? no tengo duda con el for concretamente pero hmmmm ni si quiera me da info del debug  de removeoperator
                     if (_channels[j].getName() == channelName){
                         std::cerr << "[DEBUG] Vamos a remover el operator del canal: " << channelName << std::endl;
-                        _channels[j].removeOperator(nickname);
+                        _channels[j].removeOperator(unsetNickname);
                         //Notificar a los miembros del canal
                         std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
                                                 + _clients[clientFd]->getUsername() + "@" 
                                                 + _clients[clientFd]->getHost() + " MODE " 
-                                                + channelName + " -" + unsetModes[i] + " " + nickname + "\r\n";
+                                                + channelName + " -" + unsetModes[i] + " " + unsetNickname + "\r\n";
                         notifyAllMembers(clientFd, channelName, notification);
                     }
                 }
@@ -428,29 +444,21 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
     for (int i = 0 ; i < setModes.length(); i++){
         if (currentModes.find(setModes[i]) == std::string::npos){
             if (setModes[i] == 'o' || setModes[i] == 'k'){
-                // pero si por ejemplo el último token es 'o' o 'k' no se puede hacer nada, esto está mal, por ejemplo si mandan +tik password, esto no lo cogerá bien porque i + 1 sería = 3 y la password no está en el token 3, está en el indice 1
-                modeWithArg++;
                 if (setModes[i] == 'o'){
-                    std::string nickname = tokens[modeWithArg];
-                    if (nickname.empty())
-                        continue;
                     //Añadir el modo
                     for (int j = 0; j < _channels.size(); j++){
                         if (_channels[j].getName() == channelName){
-                            _channels[j].addOperator(nickname);
+                            _channels[j].addOperator(setNickname);
                             //Notificar a los miembros del canal
                             std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
                                                     + _clients[clientFd]->getUsername() + "@" 
                                                     + _clients[clientFd]->getHost() + " MODE " 
-                                                    + channelName + " +" + setModes[i] + " " + nickname + "\r\n";
+                                                    + channelName + " +" + setModes[i] + " " + setNickname + "\r\n";
                             notifyAllMembers(clientFd, channelName, notification);
                         }
                     }
                 }
                 else if (setModes[i] == 'k'){
-                    std::string key = tokens[modeWithArg];
-                    if (key.empty())
-                        continue;
                     //Añadir el modo
                     for (int j = 0; j < _channels.size(); j++){
                         if (_channels[j].getName() == channelName){
