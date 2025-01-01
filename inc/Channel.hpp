@@ -35,6 +35,9 @@ class Channel {
 		void 			setisPrivate(bool isPrivate);
 		void			addOperator(const std::string &nick);
 		void			removeOperator(const std::string &nick);
+		void			addInvited(const std::string &nick);
+		void			addMembersToInvitedList();
+		void 			clearInvitedList();
 		void			addClient(Client &client);
 		int 			isOperator(const std::string &nick);
 		void			removeClient(Client &client);

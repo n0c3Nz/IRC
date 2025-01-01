@@ -197,3 +197,26 @@ void	Channel::setPwd(const std::string &pwd)
 {
 	this->_password = pwd;
 }
+
+void	Channel::clearInvitedList()
+{
+	this->_invited.clear();
+}
+
+void	Channel::addInvited(const std::string &nick)
+{
+	for (size_t i = 0; i < this->_invited.size(); i++)
+	{
+		if (this->_invited[i] == nick)
+			return;
+	}
+	this->_invited.push_back(nick);
+}
+
+void	Channel::addMembersToInvitedList()
+{
+	for (size_t i = 0; i < this->_members.size(); i++)
+	{
+		this->_invited.push_back(this->_members[i].getNickname());
+	}
+}

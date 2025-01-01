@@ -369,7 +369,6 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
                         _channels[j].setMode(currentMode);
                         _channels[j].setIfPwd(false);
                         _channels[j].setPwd("");
-                        _channels[j].setisPrivate(false);
                         // Guardar el nuevo modo en el channel
                         //Notificar a los miembros del canal
                         std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
@@ -398,6 +397,7 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
                         // Guardar el nuevo modo en el channel
                         _channels[j].setMode(currentMode);
                         _channels[j].setisPrivate(false);
+                        _channels[j].clearInvitedList();
                         //Notificar a los miembros del canal
                         std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
                                                 + _clients[clientFd]->getUsername() + "@" 
@@ -483,6 +483,7 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
                 for (int j = 0; j < _channels.size(); j++){
                     if (_channels[j].getName() == channelName){
                         _channels[j].setisPrivate(true);
+                        _channels[j].addMembersToInvitedList();
                         //Añadir i a _mode
                         if (currentModes.find(setModes[i]) == std::string::npos){
                             currentModes += "i";
