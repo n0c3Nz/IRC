@@ -68,6 +68,9 @@ void	Channel::setTopic(const std::string &topic)
 
 void	Channel::addOperator(const std::string &nick)
 {
+	//comprobar si es miembro
+	if (alreadyIn(nick) == false)
+		return;
 	//comprobar si ya es operador
 	for (size_t i = 0; i < this->_operators.size(); i++)
 	{
@@ -79,13 +82,19 @@ void	Channel::addOperator(const std::string &nick)
 
 void	Channel::removeOperator(const std::string &nick)
 {
+	//comprobar si es miembro
+	if (alreadyIn(nick) == false)
+		return;
 	for (size_t i = 0; i < this->_operators.size(); i++)
 	{
 		if (this->_operators[i] == nick)
 		{
+			std::cerr << "[DEBUG] Efectivamente el cliente era operador" << std::endl;
+			//eliminar el operador[i]
 			this->_operators.erase(this->_operators.begin() + i);
-			return;
 		}
+		std::string answer = isOperator(nick) ? "YES" : "NO";
+		std::cerr << "[DEBUG] ¿Ahora es operador? " << answer << std::endl;
 	}
 }
 
@@ -107,6 +116,7 @@ void		Channel::addClient(Client &client)
  	std::cerr << "[DEBUG] Cliente añadido: " << client.getNickname() << " al canal: " << this->_name << std::endl;
 }
 
+//Devuelve 1 si es operador, 0 en caso contrario
 int Channel::isOperator(const std::string &nick)
 {
 	for (size_t i = 0; i < this->_operators.size(); i++)
