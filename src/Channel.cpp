@@ -220,3 +220,13 @@ void	Channel::addMembersToInvitedList()
 		this->_invited.push_back(this->_members[i].getNickname());
 	}
 }
+
+bool	Channel::isInvited(const std::string &nick)
+{
+	for (size_t i = 0; i < this->_invited.size(); i++)
+	{
+		if (this->_invited[i] == nick)
+			return true;
+	}
+	return false;
+}

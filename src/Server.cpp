@@ -616,31 +616,49 @@ void	Server::joinChannelServerSide(std::map<std::string, std::string> channelKey
 		}
 		else//existe
 		{
+            // comprobar si ya nos hemos unido a este canal
+            for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
+                if (_clients[clientFd]->getJoinedChannels()[i] == channelName){
+                    std::cerr << "[DEBUG] Ya nos hemos unido a este canal" << std::endl;
+                    return;
+                }
+            }
 			for (size_t i = 0; i < _channels.size(); i++) {
             	if (_channels[i].getName() == channelName) {
                 	channel = &_channels[i];
                 	break;
            		}
         	}
-			if (exist(channelName) == 3)
+            //Comprobar si el canal tiene el modo invite-only y está en la lista de invitados
+            if (channel->getMode().find('i') != std::string::npos && !channel->isInvited(_clients[clientFd]->getNickname())){
+                std::string response = ":" SRV_NAME " " ERR_INVITEONLYCHAN " " + _clients[clientFd]->getNickname() + " " + channelName + " :Cannot join channel (+i)\r\n";
+                send(clientFd, response.c_str(), response.size(), 0);
+                continue;
+            }
+
+			if (exist(channelName) == 3)// Si existe y tiene contraseña
 			{
-				if (authenticateChannel(*channel, channelName) == 0)
-					{
-						channel->addClient(*_clients[clientFd]);
-						_clients[clientFd]->joinChannel(*channel);
-					}
+				if (authenticateChannel(*channel, channelKey[channelName]) == 0)
+				{
+					channel->addClient(*_clients[clientFd]);
+					_clients[clientFd]->joinChannel(*channel);
+                    sendConfirmJoin(clientFd, channelName);
+                    continue;
+				}
 				else
 				{
 					//enviar codigo de error de autenticacion de credenciales
 					std::string errorMsg = ":" SRV_NAME " " ERR_BADCHANNELKEY " " + _clients[clientFd]->getNickname() + " " + channelName + " :Cannot join channel (+k) - bad key\r\n";
-				}
+                    send(clientFd, errorMsg.c_str(), errorMsg.size(), 0);
+                    continue;
+                }
 			}
-			if (exist(channelName) == 2)
+			if (exist(channelName) == 2)// Si existe y no tiene contraseña
 			{
 				channel->addClient(*_clients[clientFd]);
 				_clients[clientFd]->joinChannel(*channel);
+			    sendConfirmJoin(clientFd, channelName);
 			}
-			sendConfirmJoin(clientFd, channelName);
 		}
 	}
 }
@@ -732,18 +750,22 @@ void Server::sendConfirmJoin(int clientFd, const std::string &channelName){
     send(clientFd, response.c_str(), response.size(), 0);
 }
 
+//Devuelve:
+//1 si el canal no existe
+//2 si el canal existe y no tiene contraseña
+//3 si el canal existe y tiene contraseña
 int	Server::exist(const std::string &channelName) const
 {
 	for (size_t i = 0; i < this->_channels.size(); i++){
 		if (std::strncmp(this->_channels[i].getName().c_str(), channelName.c_str(), channelName.length()) == 0)
 		{
             if (this->_channels[i].getIfPwd() == true)
-				return 3;
+				return 3;// Canal con contraseña
 			else
-				return 2;
+				return 2;// Canal sin contraseña
 		}
     }
-	return 1;
+	return 1;// Canal no existe
 }
 
 std::map<std::string, std::string>		Server::parseJoinRequets(std::string request) const
@@ -963,10 +985,10 @@ void Server::processCommand(int clientFd, std::string command) {
             return ;
         }
         std::string nick = _clients[clientFd]->getNickname();
-        if (isChannelOperator(channel, nick)){
+        if (isChannelOperator(channel, nick) || getChannelMode(channel).find('t') == std::string::npos){
             setChannelTopic(channel, topic);
             std::string response = ":" SRV_NAME " " RPL_TOPIC " " + _clients[clientFd]->getNickname() + " " + channel + " :" + getChannelTopic(channel) + "\r\n";
-            send(clientFd, response.c_str(), response.size(), 0);
+            notifyAllMembers(clientFd, channel, response);
             //mandar la confirmacion aqui
         }else {
             std::string response = ":" SRV_NAME " " ERR_CHANOPRIVSNEEDED " " + _clients[clientFd]->getNickname() + " " + channel + " :You're not channel operator" + "\r\n";
@@ -1085,12 +1107,12 @@ void Server::processCommand(int clientFd, std::string command) {
                 std::string channelName = _channels[i].getName();
                 std::string mode = getChannelMode(channelName);
                 //std::cerr << "[DEBUG] NOMBRE DEL CANAL: " << channelName  << " Y modo: " + mode << std::endl;
-                if (mode == "t"){
-                    std::string topic = _channels[i].getTopic();
-                    response = ":" SRV_NAME " " RPL_LIST " " + _clients[clientFd]->getNickname() + " " + channelName + " " + std::to_string(_channels[i].getMembers().size()) + " :" + topic + "\r\n";
-                    //std::cerr << "[DEBUG] Enviando información de canal: " << channelName << std::endl;
-                    send(clientFd, response.c_str(), response.size(), 0);
-                }
+                //if (mode == "t"){// este 'if' sería para filtrar si no queremos que aparezcan los canales secretos o privados en el listado. (s ó p)
+                std::string topic = _channels[i].getTopic();
+                response = ":" SRV_NAME " " RPL_LIST " " + _clients[clientFd]->getNickname() + " " + channelName + " " + std::to_string(_channels[i].getMembers().size()) + " :" + topic + "\r\n";
+                //std::cerr << "[DEBUG] Enviando información de canal: " << channelName << std::endl;
+                send(clientFd, response.c_str(), response.size(), 0);
+                //}
             }
             response = ":" SRV_NAME " " RPL_LISTEND " " + _clients[clientFd]->getNickname() + " :End of /LIST\r\n";
             send(clientFd, response.c_str(), response.size(), 0);

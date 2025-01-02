@@ -37,6 +37,7 @@ class Channel {
 		void			removeOperator(const std::string &nick);
 		void			addInvited(const std::string &nick);
 		void			addMembersToInvitedList();
+		bool			isInvited(const std::string &nick);
 		void 			clearInvitedList();
 		void			addClient(Client &client);
 		int 			isOperator(const std::string &nick);
