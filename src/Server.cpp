@@ -296,14 +296,18 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
                 if (modesStr[i] == 'o'){
                     modeWithArg++;
                     setNickname = tokens[modeWithArg];
-                    if (setNickname.empty())
+                    if (setNickname.empty()){
+                        modeWithArg--;
                         continue;
+                    }
                 }
                 else if (modesStr[i] == 'k'){
                     modeWithArg++;
                     key = tokens[modeWithArg];
-                    if (key.empty())
+                    if (key.empty()){
+                        modeWithArg--;
                         continue;
+                    }
                 }
                 setModes += modesStr[i];
             }
@@ -311,8 +315,10 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
                 if (modesStr[i] == 'o'){
                     modeWithArg++;
                     unsetNickname = tokens[modeWithArg];
-                    if (unsetNickname.empty())
+                    if (unsetNickname.empty()){
+                        modeWithArg--;
                         continue;
+                    }
                 }
                 unsetModes += modesStr[i];
             }
@@ -332,13 +338,15 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
         std::cerr << "[DEBUG] INFO: UnsetModes[i]: " << unsetModes[i] << std::endl;
         if (unsetModes[i] == 'o')
         {
-            // asi creo que está bien, en principio.
             std::cerr << "[DEBUG] Nickname del user al que quitamos el OP: " << unsetNickname << std::endl;
-            if (unsetModes[i] == 'o'){
                 //Quitar el modo
-                for (int j = 0; j < _channels.size(); j++){//hmmm entra aqui? no tengo duda con el for concretamente pero hmmmm ni si quiera me da info del debug  de removeoperator
+                for (int j = 0; j < _channels.size(); j++){//Recorremos los canales
                     if (_channels[j].getName() == channelName){
                         std::cerr << "[DEBUG] Vamos a remover el operator del canal: " << channelName << std::endl;
+                        if (_channels[j].alreadyIn(unsetNickname) == false || isChannelOperator(channelName, unsetNickname) == 0 || _clients[clientFd]->getNickname() == unsetNickname){
+                            std::cerr << "[DEBUG] El usuario seleccionado no está en el canal o no es operador o es el propio operador." << std::endl;
+                            continue;
+                        }
                         _channels[j].removeOperator(unsetNickname);
                         //Notificar a los miembros del canal
                         std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
@@ -348,7 +356,6 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
                         notifyAllMembers(clientFd, channelName, notification);
                     }
                 }
-            }
         }else if (currentModes.find(unsetModes[i]) != std::string::npos){
             if (unsetModes[i] == 'k'){
                 //Quitar el modo
@@ -438,9 +445,8 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
         }
     }
     currentModes = getChannelMode(channelName);
-    std::cerr << "[DEBUG] CurrentModes una vez hecho el unset (procedemos a set debajo): " << currentModes << std::endl;
-    //Ahora los setModes, vamos a recorrer setModes y comprobar si el canal tiene esos modos, si los tiene los añadimos y notificamos a los miembros del canal
-    //Si el modo es 'o' ó 'k' hay que ir al siguiente argumento para obtener el nickname/clave
+    std::cerr << "[DEBUG] CurrentModes una vez hecho el unset: " + currentModes + " (procedemos a set debajo): " << currentModes << std::endl;
+    //Ahora los setModes, vamos a recorrer setModes y comprobar si el canal tiene esos modos, si no los tiene los añadimos y notificamos a los miembros del canal
     for (int i = 0 ; i < setModes.length(); i++){
         if (currentModes.find(setModes[i]) == std::string::npos){
             if (setModes[i] == 'o' || setModes[i] == 'k'){
@@ -448,6 +454,10 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
                     //Añadir el modo
                     for (int j = 0; j < _channels.size(); j++){
                         if (_channels[j].getName() == channelName){
+                            // comprobar si ya está dentro y si el usuario es operador del canal y no es el propio usuario
+                            if (_channels[j].alreadyIn(setNickname) == false || isChannelOperator(channelName, setNickname) == 1 || _clients[clientFd]->getNickname() == setNickname){
+                                continue;
+                            }
                             _channels[j].addOperator(setNickname);
                             //Notificar a los miembros del canal
                             std::string notification = ":" + _clients[clientFd]->getNickname() + "!" 
@@ -462,10 +472,10 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes){
                     //Añadir el modo
                     for (int j = 0; j < _channels.size(); j++){
                         if (_channels[j].getName() == channelName){
-                            _channels[j].setIfPwd(true);
                             _channels[j].setPwd(key);
                             //Añadir k a _mode si no está presente ya
                             if (currentModes.find(setModes[i]) == std::string::npos){
+                                _channels[j].setIfPwd(true);
                                 currentModes += "k";
                                 _channels[j].setMode(currentModes);
                                 //Notificar a los miembros del canal
