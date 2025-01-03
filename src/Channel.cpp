@@ -230,3 +230,8 @@ bool	Channel::isInvited(const std::string &nick)
 	}
 	return false;
 }
+
+bool Channel::getIsPrivate() const
+{
+	return this->_isPrivate;
+}

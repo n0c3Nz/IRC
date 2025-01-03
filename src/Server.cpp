@@ -1067,6 +1067,8 @@ void Server::processCommand(int clientFd, std::string command) {
                         for (size_t k = 0; k < _channels[j].getMembers().size(); k++){//Enviar la notificación a los demás miembros del canal
                             send(_channels[j].getMembers()[k].getSocket(), notification.c_str(), notification.size(), 0);
                         }
+                        //Eliminarlo de la lista de operadores si lo es
+                        _channels[j].removeOperator(_clients[clientFd]->getNickname());
                         _channels[j].removeClient(*_clients[clientFd]);//Eliminar al cliente del canal
                         _clients[clientFd]->leaveChannel(channelName);//Eliminar el canal de los canales a los que pertenece el cliente
                         if (_channels[j].getMembers().empty()){//Si el canal se queda sin miembros
@@ -1127,8 +1129,44 @@ void Server::processCommand(int clientFd, std::string command) {
             response = ":" SRV_NAME " " RPL_LISTEND " " + _clients[clientFd]->getNickname() + " :End of /LIST\r\n";
             send(clientFd, response.c_str(), response.size(), 0);
         }
-    }
-    else {
+    } else if (std::strncmp(command.c_str(), "INVITE ", 7) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){
+        std::cerr << "[DEBUG] INVITE DETECTADO" << std::endl;
+        // NICK and CHANNEL
+        std::string nick = command.substr(7, command.find(' ', 7) - 7);
+        std::string channel = command.substr(command.find(' ', 7) + 1);
+        if (nick.empty() || channel.empty()){
+            response = ":" SRV_NAME " " ERR_NEEDMOREPARAMS " " + _clients[clientFd]->getNickname() + " INVITE :Not enough parameters\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
+        int userFd = findUserByNick(nick);
+        if (userFd == -1){
+            response = "ERROR :No such nickname\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
+        std::string inviter = _clients[clientFd]->getNickname();
+        // comprobamos que exista un canal con ese nombre
+        if (checkChannelExistence(clientFd, channel) || !isChannelOperator(channel, inviter))
+            return;
+        // comprobamos que el usuario no conste actualmente en la lista de invitados
+        for (size_t i = 0; i < _channels.size(); i++){
+            if (_channels[i].getName() == channel){
+                if (_channels[i].getIsPrivate() == false)
+                    return;
+                if (_channels[i].isInvited(nick))
+                    return;
+                // añadimos el usuario a la lista de invitados
+                _channels[i].addInvited(nick);
+                // enviamos la notificación al enviador de la invitación
+                response = ":" SRV_NAME " " RPL_INVITING " " + inviter + " " + nick + " " + channel + "\r\n";
+                send(clientFd, response.c_str(), response.size(), 0);
+                // enviamos la notificación al usuario invitado
+                response = ":" + inviter + "!" + _clients[clientFd]->getUsername() + "@" + _clients[clientFd]->getHost() + " INVITE " + nick + " :" + channel + "\r\n";
+                send(userFd, response.c_str(), response.size(), 0);
+            }
+        }
+    }else {
         response = "ERROR :Unknown command ma G\r\n";
     }
     //for tests print client nickname, username and realname

@@ -53,5 +53,7 @@
 //MODES
 #define MODES "kiot"
 
+//INVITE
+#define RPL_INVITING "341"
 
 #endif

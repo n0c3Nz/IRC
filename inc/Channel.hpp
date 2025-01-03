@@ -28,6 +28,7 @@ class Channel {
 		std::string		getPwd() const;
 		std::string		getMode() const;
 		std::string		getTopic() const;
+		bool 			getIsPrivate() const;
 		void			setMode(const std::string &mode);
 		void			setTopic(const std::string &topic);
 		void			setPwd(const std::string &pwd);
