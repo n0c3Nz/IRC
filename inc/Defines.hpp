@@ -5,6 +5,10 @@
 #define MAX_EVENTS 10
 #define MAX_MSG_SIZE 4096
 
+// C
+// ------- CODE STATUS -------
+
+
 // Server Handshake
 #define SRV_NAME "AnonChatServer"
 #define SRV_VERSION "0.1"
@@ -32,6 +36,7 @@
 #define ERR_BADCHANNELKEY "475"
 #define ERR_NOTONCHANNEL "442"
 #define ERR_NOSUCHCHANNEL "403"
+#define ERR_CHANNELISFULL "471"
 
 // MODE
 #define RPL_CHANNELMODEIS "324"
@@ -50,10 +55,20 @@
 //#define ERR_NOTONCHANNEL "442"//(442) si no está en el canal.
 #define ERR_NEEDMOREPARAMS "461"//(461) si faltan parámetros.
 
-//MODES
-#define MODES "kiot"
-
 //INVITE
 #define RPL_INVITING "341"
+
+
+// KICK
+#define RPL_KICKING "342"//(342) si se ha expulsado a alguien.
+#define ERR_KICKED "470"//(470) si no tiene permisos.
+// --------------------------
+
+//MODES
+
+#define MODES "lokit"
+#define MIN_CHANNELMEMBERS 0
+#define MAX_CHANNELMEMBERS 10
+
 
 #endif

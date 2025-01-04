@@ -5,6 +5,8 @@ Channel::Channel() {
 	this->_isPrivate = false;
 	this->_topic = "No topic is set";
 	this->_mode = "t";
+	this->_Pwd = false;
+	this->maxMembers = -1;
 }
 
 Channel::Channel(std::string name) {
@@ -12,6 +14,8 @@ Channel::Channel(std::string name) {
 	this->_isPrivate = false;
 	this->_topic = "No topic is set";
 	this->_mode = "t";
+	this->_Pwd = false;
+	this->maxMembers = -1;
 }
 
 Channel::Channel(const Channel &copy) {
@@ -23,12 +27,20 @@ Channel::Channel(const Channel &copy) {
 	this->_isPrivate = copy._isPrivate;
 	this->_Pwd = copy._Pwd;
 	this->_mode = copy._mode;
+	this->maxMembers = copy.maxMembers;
 }
 
 Channel &Channel::operator=(const Channel &copy) {
 	if (this != &copy) {
 		this->_name = copy._name;
 		this->_isPrivate = copy._isPrivate;
+		this->_topic = copy._topic;
+		this->_members = copy._members;
+		this->_operators = copy._operators;
+		this->_password = copy._password;
+		this->_Pwd = copy._Pwd;
+		this->_mode = copy._mode;
+		this->maxMembers = copy.maxMembers;
 	}
 	return *this;
 }
@@ -234,4 +246,27 @@ bool	Channel::isInvited(const std::string &nick)
 bool Channel::getIsPrivate() const
 {
 	return this->_isPrivate;
+}
+
+
+// Devuelve el número máximo de miembros que puede tener el canal
+int Channel::getMaxMembers() const
+{
+	return this->maxMembers;
+}
+// Establece el número máximo de miembros que puede tener el canal:
+// -1: Sin límite
+void Channel::setMaxMembers(int maxMembers)
+{
+	this->maxMembers = maxMembers;
+}
+
+bool Channel::isMember(const std::string &nick)
+{
+	for (size_t i = 0; i < this->_members.size(); i++)
+	{
+		if (this->_members[i].getNickname() == nick)
+			return true;
+	}
+	return false;
 }

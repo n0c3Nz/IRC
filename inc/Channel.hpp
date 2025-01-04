@@ -16,6 +16,7 @@ class Channel {
 		bool							_isPrivate;
 		bool							_Pwd;
 		std::string						_mode;
+		int								maxMembers;
 	public:
 		Channel();
 		Channel(std::string name);
@@ -29,6 +30,8 @@ class Channel {
 		std::string		getMode() const;
 		std::string		getTopic() const;
 		bool 			getIsPrivate() const;
+		int 			getMaxMembers() const;
+		void			setMaxMembers(int maxMembers);
 		void			setMode(const std::string &mode);
 		void			setTopic(const std::string &topic);
 		void			setPwd(const std::string &pwd);
@@ -39,6 +42,7 @@ class Channel {
 		void			addInvited(const std::string &nick);
 		void			addMembersToInvitedList();
 		bool			isInvited(const std::string &nick);
+		bool 			isMember(const std::string &nick);
 		void 			clearInvitedList();
 		void			addClient(Client &client);
 		int 			isOperator(const std::string &nick);

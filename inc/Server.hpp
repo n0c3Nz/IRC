@@ -32,6 +32,7 @@ class Server {
 		std::string	getChannelMode(const std::string &channelName) const;
 		std::string getChannelTopic(const std::string &channelName);
 		int isChannelOperator(const std::string &channelName, std::string &nick);
+		int getChannelMaxMembers(const std::string &channelName);
 		// Setters
 		void setPort(int port);
 		void setSocket(int socket);
@@ -39,6 +40,7 @@ class Server {
 		void setChannels(std::vector <Channel> channels);
 		void setNickname(int clientFd, const std::string &nickname);
 		void setChannelTopic(std::string &channelName, std::string &topic);
+		void setChannelMaxMembers(std::string &channelName, int maxMembers);
 		// Methods
 		void AnnounceConnection(int clientFd) const;
 		void start(void);
