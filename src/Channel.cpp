@@ -7,6 +7,7 @@ Channel::Channel() {
 	this->_mode = "t";
 	this->_Pwd = false;
 	this->maxMembers = -1;
+	this->_createdTime = std::to_string(time(NULL));
 }
 
 Channel::Channel(std::string name) {
@@ -16,6 +17,7 @@ Channel::Channel(std::string name) {
 	this->_mode = "t";
 	this->_Pwd = false;
 	this->maxMembers = -1;
+	this->_createdTime = std::to_string(time(NULL));
 }
 
 Channel::Channel(const Channel &copy) {
@@ -28,6 +30,7 @@ Channel::Channel(const Channel &copy) {
 	this->_Pwd = copy._Pwd;
 	this->_mode = copy._mode;
 	this->maxMembers = copy.maxMembers;
+	this->_createdTime = copy._createdTime;
 }
 
 Channel &Channel::operator=(const Channel &copy) {
@@ -41,6 +44,7 @@ Channel &Channel::operator=(const Channel &copy) {
 		this->_Pwd = copy._Pwd;
 		this->_mode = copy._mode;
 		this->maxMembers = copy.maxMembers;
+		this->_createdTime = copy._createdTime;
 	}
 	return *this;
 }
@@ -269,4 +273,9 @@ bool Channel::isMember(const std::string &nick)
 			return true;
 	}
 	return false;
+}
+
+std::string Channel::getCreatedTime() const
+{
+	return this->_createdTime;
 }

@@ -17,6 +17,7 @@ class Channel {
 		bool							_Pwd;
 		std::string						_mode;
 		int								maxMembers;
+		std::string						_createdTime;
 	public:
 		Channel();
 		Channel(std::string name);
@@ -31,6 +32,7 @@ class Channel {
 		std::string		getTopic() const;
 		bool 			getIsPrivate() const;
 		int 			getMaxMembers() const;
+		std::string		getCreatedTime() const;
 		void			setMaxMembers(int maxMembers);
 		void			setMode(const std::string &mode);
 		void			setTopic(const std::string &topic);

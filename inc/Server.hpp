@@ -33,6 +33,7 @@ class Server {
 		std::string getChannelTopic(const std::string &channelName);
 		int isChannelOperator(const std::string &channelName, std::string &nick);
 		int getChannelMaxMembers(const std::string &channelName);
+		std::string getChannelCreatedTime(const std::string &channelName);
 		// Setters
 		void setPort(int port);
 		void setSocket(int socket);

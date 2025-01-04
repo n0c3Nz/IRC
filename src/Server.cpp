@@ -85,6 +85,16 @@ int Server::getChannelMaxMembers(const std::string &channelName)
     return 0;
 }
 
+std::string Server::getChannelCreatedTime(const std::string &channelName)
+{
+    for (int i = 0; i < _channels.size(); i++)
+    {
+        if (_channels[i].getName() == channelName)
+            return _channels[i].getCreatedTime();
+    }
+    return "Not found Created Time";
+}
+
 // Retorna 1 si el usuario es operador del canal, 0 en caso contrario
 int Server::isChannelOperator(const std::string &channelName, std::string &nick){
     for (int i = 0; i < _channels.size(); i++)
@@ -1084,7 +1094,8 @@ void Server::processCommand(int clientFd, std::string command) {
             response = ":" SRV_NAME " " RPL_CHANNELMODEIS " " + _clients[clientFd]->getNickname() + " " + channel + " +" + modeStr + " " + maxMembers + "\r\n";
             send(clientFd, response.c_str(), response.size(), 0);
             //enviar RPL_CREATIONTIME
-            response = ":" SRV_NAME " " RPL_CREATIONTIME " " + _clients[clientFd]->getNickname() + " " + channel + " " + std::to_string(time(NULL)) + "\r\n";
+            std::string createdTime = getChannelCreatedTime(channel);
+            response = ":" SRV_NAME " " RPL_CREATIONTIME " " + _clients[clientFd]->getNickname() + " " + channel + " " + createdTime + "\r\n";
             send(clientFd, response.c_str(), response.size(), 0);
         }
         else {
@@ -1257,10 +1268,6 @@ void Server::processCommand(int clientFd, std::string command) {
                 _channels[i].removeClient(*_clients[userFd]);
                 // eliminamos el canal de los canales a los que pertenece el cliente
                 _clients[userFd]->leaveChannel(channel);
-                // enviamos la notificación al usuario expulsado
-                //response = ":" SRV_NAME " " RPL_KICKING " " + _clients[clientFd]->getNickname() + " " + channel + " " + nick + " :" + reason + "\r\n";
-                //send(userFd, response.c_str(), response.size(), 0);
-                // enviamos la notificación al resto de miembros del canal
             }
         }
     }else {
