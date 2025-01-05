@@ -629,10 +629,9 @@ void Server::part(int clientFd, std::string channelName, std::string msg){
 }
 
 void Server::partAll(int clientFd, std::string msg){
-    //Utilizar part en todos los canales en los que un usuario es miembro verificando si el usuario es miembro de cada canal
-    for (int i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
-        std::cerr << "[DEBUG] Saliendo del canal " << _clients[clientFd]->getJoinedChannels()[i] << std::endl;
-        part(clientFd, _clients[clientFd]->getJoinedChannels()[i], msg);
+    std::vector<std::string> joinedChannels = _clients[clientFd]->getJoinedChannels();
+    for (size_t i = 0; i < joinedChannels.size(); i++){
+        part(clientFd, joinedChannels[i], msg);
     }
 }
 
@@ -1308,10 +1307,6 @@ void Server::processCommand(int clientFd, std::string command) {
         closeConnection(userFd);
         response = ":" SRV_NAME " NOTICE " + _clients[clientFd]->getNickname() + " :Killed " + nick + " (" + reason + ")\r\n";
         send(clientFd, response.c_str(), response.size(), 0);
-        // mandamos response al cliente que se va a expulsar y cerramos su conexión // guille mira bien la respuesta del servidor.
-        //response = "ERROR :Closing Link: " + nick + " (" + reason + ")\r\n";
-        //send(userFd, response.c_str(), response.size(), 0);
-        //closeConnection(userFd);
     }
     else {
         response = "ERROR :Unknown command ma G\r\n";
