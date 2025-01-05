@@ -62,6 +62,10 @@
 // KICK
 #define RPL_KICKING "342"//(342) si se ha expulsado a alguien.
 #define ERR_KICKED "470"//(470) si no tiene permisos.
+
+//KILL 
+#define ERR_KILL "361"//(361) si no tiene permisos.
+#define RPL_RILL "362"//(362) si se ha expulsado a alguien.
 // --------------------------
 
 //MODES

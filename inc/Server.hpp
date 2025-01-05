@@ -61,6 +61,8 @@ class Server {
 		void joinChannelServerSide(std::map<std::string, std::string> channelKey, int clientFd);
 		void names(int clientFd, std::string channelName);
 		void mode(int clientFd, std::string &channelName, std::string &modes);
+		void part(int clientFd, std::string channelName, std::string msg);
+		void partAll(int clientFd, std::string msg);
 		//Auxiliar
 		void notifyAllMembers(int clientFd, std::string &channelName, std::string &msg);
 		int checkChannelExistence(int clientFd, const std::string &channelName);

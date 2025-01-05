@@ -605,6 +605,37 @@ void Server::mode(int clientFd, std::string &channelName, std::string &modes) {
     std::cerr << "[DEBUG] Modo final del canal: " << currentModes << std::endl;
 }
 
+void Server::part(int clientFd, std::string channelName, std::string msg){
+    if (checkChannelExistence(clientFd, channelName) || checkChannelMembership(clientFd, channelName))
+            return;
+        for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){//Recorrer los canales a los que pertenece el cliente
+            if (_clients[clientFd]->getJoinedChannels()[i] == channelName){//Si el cliente pertenece al canal
+                for (size_t j = 0; j < _channels.size(); j++){//Recorrer los canales
+                    if (_channels[j].getName() == channelName){//Si el canal existe
+                        std::string notification = ":" + _clients[clientFd]->getNickname() + " PART " + channelName + " :" + msg + "\r\n";//Notificación de que el cliente ha abandonado el canal
+                        notifyAllMembers(clientFd, channelName, notification);//Notificar a los miembros del canal
+                        //Eliminarlo de la lista de operadores si lo es
+                        _channels[j].removeOperator(_clients[clientFd]->getNickname());
+                        _channels[j].removeClient(*_clients[clientFd]);//Eliminar al cliente del canal
+                        _clients[clientFd]->leaveChannel(channelName);//Eliminar el canal de los canales a los que pertenece el cliente
+                        if (_channels[j].getMembers().empty()){//Si el canal se queda sin miembros
+                            _channels.erase(_channels.begin() + j);//Eliminar el canal
+                            std::cerr << "[DEBUG] Canal eliminado" << std::endl;
+                        }
+                    }
+                }
+            }
+        }
+}
+
+void Server::partAll(int clientFd, std::string msg){
+    //Utilizar part en todos los canales en los que un usuario es miembro verificando si el usuario es miembro de cada canal
+    for (int i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){
+        std::cerr << "[DEBUG] Saliendo del canal " << _clients[clientFd]->getJoinedChannels()[i] << std::endl;
+        part(clientFd, _clients[clientFd]->getJoinedChannels()[i], msg);
+    }
+}
+
 int checkEmptyAndAlnum(std::string str){
     if (str.empty()){
         return 1;
@@ -666,8 +697,6 @@ int Server::checkHash(int clientFd){
     _authenticatedClients.push_back(_clients[clientFd]->getHash());// Lo insertamos en la lista de clientes autenticados
     return 0;
 }
-
-
 	
 int		Server::authenticateChannel(const Channel &channel, const std::string &password) const
 {
@@ -1128,26 +1157,7 @@ void Server::processCommand(int clientFd, std::string command) {
         }
         std::string channelName = command.substr(5, pos - 6);
         std::string msg = command.substr(pos + 1);
-        if (checkChannelExistence(clientFd, channelName) || checkChannelMembership(clientFd, channelName))
-            return;
-        for (size_t i = 0; i < _clients[clientFd]->getJoinedChannels().size(); i++){//Recorrer los canales a los que pertenece el cliente
-            if (_clients[clientFd]->getJoinedChannels()[i] == channelName){//Si el cliente pertenece al canal
-                for (size_t j = 0; j < _channels.size(); j++){//Recorrer los canales
-                    if (_channels[j].getName() == channelName){//Si el canal existe
-                        std::string notification = ":" + _clients[clientFd]->getNickname() + " PART " + channelName + " :" + msg + "\r\n";//Notificación de que el cliente ha abandonado el canal
-                        notifyAllMembers(clientFd, channelName, notification);//Notificar a los miembros del canal
-                        //Eliminarlo de la lista de operadores si lo es
-                        _channels[j].removeOperator(_clients[clientFd]->getNickname());
-                        _channels[j].removeClient(*_clients[clientFd]);//Eliminar al cliente del canal
-                        _clients[clientFd]->leaveChannel(channelName);//Eliminar el canal de los canales a los que pertenece el cliente
-                        if (_channels[j].getMembers().empty()){//Si el canal se queda sin miembros
-                            _channels.erase(_channels.begin() + j);//Eliminar el canal
-                            std::cerr << "[DEBUG] Canal eliminado" << std::endl;
-                        }
-                    }
-                }
-            }
-        }
+        part(clientFd, channelName, msg);
     }else if (std::strncmp(command.c_str(), "NAMES ", 6) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth()){
         std::cerr << "[DEBUG] NAMES DETECTADO" << std::endl;
         std::string channelName = command.substr(6);
@@ -1270,7 +1280,40 @@ void Server::processCommand(int clientFd, std::string command) {
                 _clients[userFd]->leaveChannel(channel);
             }
         }
-    }else {
+    }
+    else if (std::strncmp(command.c_str(), "KILL ", 5) == 0 && _clients[clientFd]->getPwdSent() && _clients[clientFd]->getIsAuth() && _clients[clientFd]->getIsOperator()){
+        std::cerr << "[DEBUG] KILL DETECTADO" << std::endl;
+        // NICK AND REASON
+        
+        std::string nick = command.substr(5, command.find(':', 5) - 6);
+        std::string reason = command.substr(command.find(':', 5) + 1);
+        if (nick.empty() || reason.empty()){
+            response = ":" SRV_NAME " " ERR_NEEDMOREPARAMS " " + _clients[clientFd]->getNickname() + " KILL :Not enough parameters\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            return;
+        }
+        int userFd = findUserByNick(nick);
+        std::cerr << "[DEBUG] Usuario a expulsar: " << nick << std::endl;
+        if (userFd == -1){
+            response = "ERROR :No such nickname\r\n";
+            send(clientFd, response.c_str(), response.size(), 0);
+            std::cerr << "[DEBUG] Usuario no encontrado: [" << nick << "]"<< std::endl;
+            return;
+        }
+        std::string kicker = _clients[clientFd]->getNickname();
+        //ERROR :Closing Link: <nick> (Killed by <OperNick> :Razón)
+        response = "ERROR :Closing Link: " + nick + " (Killed by " + kicker + " :" + reason + ")\r\n";
+        send(userFd, response.c_str(), response.size(), 0);
+        partAll(userFd, "Killed by " + kicker + " :" + reason);
+        closeConnection(userFd);
+        response = ":" SRV_NAME " NOTICE " + _clients[clientFd]->getNickname() + " :Killed " + nick + " (" + reason + ")\r\n";
+        send(clientFd, response.c_str(), response.size(), 0);
+        // mandamos response al cliente que se va a expulsar y cerramos su conexión // guille mira bien la respuesta del servidor.
+        //response = "ERROR :Closing Link: " + nick + " (" + reason + ")\r\n";
+        //send(userFd, response.c_str(), response.size(), 0);
+        //closeConnection(userFd);
+    }
+    else {
         response = "ERROR :Unknown command ma G\r\n";
     }
     //for tests print client nickname, username and realname
