@@ -25,6 +25,12 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	std::string pwd = argv[2];
+	std::string port = argv[1];
+	if (port.empty())
+	{
+		std::cerr << "port cannot be empty" << std::endl;
+		return 1;
+	}
 	if (pwd.empty())
 	{
 		std::cerr << "Password cannot be empty" << std::endl;
@@ -39,7 +45,7 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 	}
-	checkPort(argv[1]);
+	checkPort(port);
 	Server server(std::stoi(argv[1]), pwd, ":Welcome to the Anon Chat Server");
 	server.start();
 	server.run();
